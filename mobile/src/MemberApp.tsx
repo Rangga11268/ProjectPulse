@@ -388,7 +388,7 @@ export const MemberApp: React.FC = () => {
                   onClick={() => setShowLogModal(true)}
                   className="ion-margin-top"
                 >
-                  ⏱ Catat Log Waktu Kerja
+                  Catat Log Waktu Kerja
                 </IonButton>
 
                 {/* Log History */}

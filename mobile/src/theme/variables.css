@@ -1,2 +1,43 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* Hallmark Utilitarian OKLCH Theme for Ionic Mobile */
+:root {
+  --ion-color-primary: #18181b;
+  --ion-color-primary-rgb: 24, 24, 27;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #121214;
+  --ion-color-primary-tint: #2f2f35;
+
+  --ion-color-secondary: #2563eb;
+  --ion-color-secondary-contrast: #ffffff;
+
+  --ion-color-tertiary: #4f46e5;
+  --ion-color-tertiary-contrast: #ffffff;
+
+  --ion-color-success: #16a34a;
+  --ion-color-warning: #d97706;
+  --ion-color-danger: #dc2626;
+
+  --ion-background-color: #fafafa;
+  --ion-card-background: #ffffff;
+  --ion-font-family: -apple-system, BlinkMacSystemFont, "Geist", "Segoe UI", Roboto, sans-serif;
+}
+
+/* Hairline borders on mobile card elements */
+ion-card {
+  border: 1px solid #e4e4e7;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+ion-card-title {
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+}
+
+ion-badge {
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+}
