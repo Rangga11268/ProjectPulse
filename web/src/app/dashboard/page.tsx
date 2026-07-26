@@ -286,8 +286,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[var(--color-paper)]">
       {/* Top Header Bar */}
       <header className="bg-white border-b border-[var(--color-paper-3)] px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/billcodeLogo.webp" alt="Bilcode Logo" className="h-8 w-auto object-contain" />
+        <div className="flex items-center gap-3.5">
+          <div className="bg-slate-900 px-2 py-1 rounded-md flex items-center justify-center">
+            <img src="/billcodeLogo.webp" alt="Bilcode Logo" className="h-6 w-auto object-contain brightness-110" />
+          </div>
           <span className="font-extrabold text-base tracking-tight text-[var(--color-ink)] uppercase">
             ProjectPulse
           </span>

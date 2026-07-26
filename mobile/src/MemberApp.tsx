@@ -254,11 +254,13 @@ export const MemberApp: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '12px' }}>
-            <img src="/billcodeLogo.webp" alt="Bilcode Logo" style={{ height: '28px', width: 'auto' }} />
-            <IonTitle style={{ paddingLeft: 0 }}>Tugasku ({user?.name})</IonTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px' }}>
+            <div style={{ background: '#ffffff', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
+              <img src="/billcodeLogo.webp" alt="Bilcode Logo" style={{ height: '22px', width: 'auto' }} />
+            </div>
+            <IonTitle style={{ paddingLeft: 0, fontSize: '0.95rem' }}>ProjectPulse ({user?.name?.split(' ')[0] || 'Member'})</IonTitle>
           </div>
-          <IonButton slot="end" fill="clear" color="light" onClick={handleLogout}>
+          <IonButton slot="end" fill="clear" color="light" size="small" onClick={handleLogout}>
             Logout
           </IonButton>
         </IonToolbar>
