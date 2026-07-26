@@ -181,6 +181,21 @@ export const MemberApp: React.FC = () => {
     setUser(null);
   };
 
+  const formatStatusLabel = (status: string) => {
+    switch (status) {
+      case 'in_progress':
+        return 'IN PROGRESS';
+      case 'todo':
+        return 'TO DO';
+      case 'review':
+        return 'REVIEW';
+      case 'done':
+        return 'DONE';
+      default:
+        return status ? status.toUpperCase() : '-';
+    }
+  };
+
   const activeTasks = tasks.filter((t) => t.status !== 'done' && (statusFilter === 'all' || t.status === statusFilter));
   const completedTasks = tasks.filter((t) => t.status === 'done');
 
@@ -288,7 +303,7 @@ export const MemberApp: React.FC = () => {
                         {t.category}
                       </IonBadge>
                       <IonBadge color={t.status === 'in_progress' ? 'warning' : 'medium'}>
-                        {t.status}
+                        {formatStatusLabel(t.status)}
                       </IonBadge>
                     </div>
                     <IonCardTitle style={{ fontSize: '1rem', marginTop: '8px' }}>
@@ -393,7 +408,7 @@ export const MemberApp: React.FC = () => {
                         fill={selectedTask.status === st ? 'solid' : 'outline'}
                         onClick={() => handleUpdateStatus(selectedTask.id, st)}
                       >
-                        {st}
+                        {formatStatusLabel(st)}
                       </IonButton>
                     ))}
                   </div>
