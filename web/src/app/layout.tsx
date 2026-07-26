@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ProjectPulse Admin — Client & Internal Project Management",
   description: "Platform Manajemen Klien & Proyek Internal Bilcode Technology",
+  icons: {
+    icon: "/billcodeLogo.webp",
+  },
 };
 
 export default function RootLayout({

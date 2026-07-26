@@ -203,16 +203,24 @@ export const MemberApp: React.FC = () => {
     return (
       <IonPage>
         <IonHeader>
-          <IonToolbar color="primary">
-            <IonTitle>ProjectPulse Member</IonTitle>
+          <IonToolbar color="dark">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px' }}>
+              <img src="/billcodeLogo.webp" alt="Bilcode" style={{ height: '26px', width: 'auto' }} />
+              <IonTitle style={{ paddingLeft: 0, fontSize: '0.9rem', color: '#fff' }}>ProjectPulse</IonTitle>
+            </div>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle>Member App Login</IonCardTitle>
-              <IonCardSubtitle>Aplikasi Developer & Desainer Bilcode</IonCardSubtitle>
-            </IonCardHeader>
+          <IonCard style={{ overflow: 'hidden', marginTop: '16px' }}>
+            <div style={{ background: '#0f172a', padding: '24px 16px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
+              <img src="/billcodeLogo.webp" alt="Bilcode Logo" style={{ height: '36px', width: 'auto', margin: '0 auto 8px auto' }} />
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em', margin: 0, textTransform: 'uppercase' }}>
+                ProjectPulse Member
+              </h2>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px', margin: 0 }}>
+                Aplikasi Developer & Desainer Bilcode
+              </p>
+            </div>
             <IonCardContent>
               <form onSubmit={handleLogin}>
                 <IonItem className="ion-margin-bottom">
@@ -253,12 +261,10 @@ export const MemberApp: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="dark">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px' }}>
-            <div style={{ background: '#ffffff', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
-              <img src="/billcodeLogo.webp" alt="Bilcode Logo" style={{ height: '22px', width: 'auto' }} />
-            </div>
-            <IonTitle style={{ paddingLeft: 0, fontSize: '0.95rem' }}>ProjectPulse ({user?.name?.split(' ')[0] || 'Member'})</IonTitle>
+            <img src="/billcodeLogo.webp" alt="Bilcode Logo" style={{ height: '26px', width: 'auto' }} />
+            <IonTitle style={{ paddingLeft: 0, fontSize: '0.9rem', color: '#fff' }}>ProjectPulse</IonTitle>
           </div>
           <IonButton slot="end" fill="clear" color="light" size="small" onClick={handleLogout}>
             Logout
@@ -392,26 +398,56 @@ export const MemberApp: React.FC = () => {
           {selectedTask && (
             <>
               <IonHeader>
-                <IonToolbar>
-                  <IonTitle>Detail Task #{selectedTask.id}</IonTitle>
-                  <IonButton slot="end" fill="clear" onClick={() => setSelectedTask(null)}>
+                <IonToolbar color="dark">
+                  <IonTitle style={{ fontSize: '0.9rem' }}>Detail Task #{selectedTask.id}</IonTitle>
+                  <IonButton slot="end" fill="clear" color="light" size="small" onClick={() => setSelectedTask(null)}>
                     Tutup
                   </IonButton>
                 </IonToolbar>
               </IonHeader>
-              <IonContent className="ion-padding">
-                <h2>{selectedTask.title}</h2>
-                <p style={{ color: '#666' }}>{selectedTask.description}</p>
+              <IonContent className="ion-padding" style={{ '--background': '#fafafa' }}>
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bae6fd' }}>
+                      {selectedTask.category}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
+                      {formatStatusLabel(selectedTask.status)}
+                    </span>
+                  </div>
 
-                <div style={{ margin: '20px 0' }}>
-                  <IonLabel><strong>Update Status Progress:</strong></IonLabel>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a', margin: '4px 0 8px 0', lineHeight: 1.3 }}>
+                    {selectedTask.title}
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
+                    {selectedTask.description || 'Tidak ada deskripsi rincian.'}
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Proyek</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#0f172a' }}>{selectedTask.project?.name || '-'}</span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Deadline</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#e11d48' }}>{selectedTask.deadline || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Update Control */}
+                <div style={{ marginTop: '16px', background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <IonLabel style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: '#475569', display: 'block', marginBottom: '10px' }}>
+                    Update Status Pekerjaan:
+                  </IonLabel>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     {['todo', 'in_progress', 'review', 'done'].map((st) => (
                       <IonButton
                         key={st}
                         size="small"
-                        fill={selectedTask.status === st ? 'solid' : 'outline'}
+                        color={selectedTask.status === st ? 'secondary' : 'light'}
                         onClick={() => handleUpdateStatus(selectedTask.id, st)}
+                        style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.7rem' }}
                       >
                         {formatStatusLabel(st)}
                       </IonButton>
@@ -423,27 +459,39 @@ export const MemberApp: React.FC = () => {
                   expand="block"
                   color="tertiary"
                   onClick={() => setShowLogModal(true)}
-                  className="ion-margin-top"
+                  style={{ marginTop: '16px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                 >
-                  Catat Log Waktu Kerja
+                  + Catat Log Jam Kerja
                 </IonButton>
 
                 {/* Log History */}
-                <h3 style={{ marginTop: '24px' }}>Riwayat Log Waktu:</h3>
-                {selectedTask.time_logs?.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: '#888' }}>Belum ada log waktu.</p>
-                ) : (
-                  <IonList>
-                    {selectedTask.time_logs?.map((log: any) => (
-                      <IonItem key={log.id}>
-                        <IonLabel>
-                          <h2>{log.hours} Jam</h2>
-                          <p>{log.note}</p>
-                        </IonLabel>
-                      </IonItem>
-                    ))}
-                  </IonList>
-                )}
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h3 style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', margin: 0 }}>
+                      Riwayat Log Waktu:
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#2563eb' }}>
+                      Total: {selectedTask.time_logs?.reduce((acc: number, l: any) => acc + Number(l.hours), 0) || 0} Jam
+                    </span>
+                  </div>
+
+                  {selectedTask.time_logs?.length === 0 ? (
+                    <div style={{ padding: '16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+                      Belum ada log waktu kerja yang dicatat.
+                    </div>
+                  ) : (
+                    <IonList style={{ background: 'transparent', padding: 0 }}>
+                      {selectedTask.time_logs?.map((log: any) => (
+                        <IonItem key={log.id} style={{ '--background': '#ffffff', borderRadius: '8px', marginBottom: '6px', border: '1px solid #e2e8f0' }}>
+                          <IonLabel>
+                            <h2 style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a' }}>{log.hours} Jam Kerja</h2>
+                            <p style={{ fontSize: '0.75rem', color: '#475569' }}>{log.note || 'Tanpa catatan'}</p>
+                          </IonLabel>
+                        </IonItem>
+                      ))}
+                    </IonList>
+                  )}
+                </div>
               </IonContent>
             </>
           )}

@@ -37,59 +37,60 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-paper)]">
-      <div className="w-full max-w-md bg-white border border-[var(--color-paper-3)] rounded-xl p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-[var(--color-accent)] rounded-full text-xs font-semibold tracking-wider uppercase mb-3">
-            Bilcode Technology
-          </div>
-          <h1 className="text-2xl font-bold text-[var(--color-ink)] tracking-tight">ProjectPulse Admin</h1>
-          <p className="text-sm text-[var(--color-ink-muted)] mt-1">Platform Manajemen Klien & Proyek Internal</p>
+      <div className="w-full max-w-md bg-white border border-[var(--color-paper-3)] rounded-2xl overflow-hidden shadow-sm">
+        {/* Brand Slate Navy Header Banner for Logo Contrast */}
+        <div className="bg-slate-900 p-8 text-center border-b border-slate-800">
+          <img src="/billcodeLogo.webp" alt="Bilcode Logo" className="h-12 w-auto mx-auto object-contain mb-3" />
+          <h1 className="text-xl font-extrabold text-white tracking-tight uppercase">ProjectPulse</h1>
+          <p className="text-xs text-slate-300 mt-1 font-medium">Platform Manajemen Klien & Proyek Internal</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
-            {error}
+        <div className="p-8 space-y-5">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider mb-1.5">
+                Email Admin
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-sm border border-[var(--color-paper-3)] rounded-lg focus:outline-none focus:border-blue-600 font-medium transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider mb-1.5">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-sm border border-[var(--color-paper-3)] rounded-lg focus:outline-none focus:border-blue-600 font-medium transition"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition duration-150 disabled:opacity-50 mt-2 shadow-xs"
+            >
+              {loading ? 'Memproses Login...' : 'Masuk ke Admin Console'}
+            </button>
+          </form>
+
+          <div className="pt-3 border-t border-[var(--color-paper-2)] text-center text-xs text-[var(--color-ink-muted)]">
+            Protip: Login Admin via <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono">admin@bilcode.com</code>
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider mb-1">
-              Email Admin
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-[var(--color-paper-3)] rounded-lg focus:outline-none focus:border-[var(--color-accent)]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-[var(--color-paper-3)] rounded-lg focus:outline-none focus:border-[var(--color-accent)]"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium text-sm rounded-lg transition duration-150 disabled:opacity-50"
-          >
-            {loading ? 'Memproses Login...' : 'Masuk ke Dashboard'}
-          </button>
-        </form>
-
-        <div className="mt-6 pt-4 border-t border-[var(--color-paper-2)] text-center text-xs text-[var(--color-ink-muted)]">
-          Protip: Gunakan akun seeder <code className="bg-[var(--color-paper-2)] px-1 py-0.5 rounded">admin@bilcode.com</code>
         </div>
       </div>
     </div>

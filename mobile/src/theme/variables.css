@@ -17,6 +17,13 @@
   --ion-color-warning: #d97706;
   --ion-color-danger: #dc2626;
 
+  --ion-color-dark: #0f172a;
+  --ion-color-dark-rgb: 15, 23, 42;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #0a0f1d;
+  --ion-color-dark-tint: #27354f;
+
   --ion-background-color: #fafafa;
   --ion-card-background: #ffffff;
   --ion-font-family: -apple-system, BlinkMacSystemFont, "Geist", "Segoe UI", Roboto, sans-serif;
