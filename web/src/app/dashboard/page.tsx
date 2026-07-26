@@ -285,12 +285,13 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--color-paper)]">
       {/* Top Header Bar */}
-      <header className="bg-white border-b border-[var(--color-paper-3)] px-8 py-4 flex items-center justify-between">
+      <header className="bg-white border-b border-[var(--color-paper-3)] px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <img src="/billcodeLogo.webp" alt="Bilcode Logo" className="h-8 w-auto object-contain" />
           <span className="font-extrabold text-base tracking-tight text-[var(--color-ink)] uppercase">
             ProjectPulse
           </span>
-          <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-bold uppercase tracking-wider border border-gray-200">
+          <span className="text-[10px] px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded font-bold uppercase tracking-wider border border-blue-200">
             {user?.role === 'admin' ? 'Admin Console' : 'Member Workspace'}
           </span>
         </div>
@@ -307,34 +308,34 @@ export default function DashboardPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto p-8 space-y-6">
-        {/* Hallmark Stat-Led Metric Cards */}
+        {/* Hallmark Vibrant Stat-Led Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="stat-card">
-            <span className="stat-card-title">Proyek Aktif</span>
-            <div className="stat-card-value">{summary?.active_projects || 0}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">
+          <div className="stat-card bg-sky-50/50 border-sky-200/80">
+            <span className="stat-card-title text-sky-800">Proyek Aktif</span>
+            <div className="stat-card-value text-sky-950">{summary?.active_projects || 0}</div>
+            <span className="text-[11px] text-sky-700 block mt-1">
               dari {summary?.total_projects} total proyek
             </span>
           </div>
 
-          <div className="stat-card">
-            <span className="stat-card-title text-red-600">Task Overdue</span>
-            <div className="stat-card-value text-red-600">{summary?.overdue_tasks || 0}</div>
-            <span className="text-[11px] text-red-500 block mt-1 font-medium">perlu penanganan segera</span>
+          <div className="stat-card bg-rose-50/50 border-rose-200/80">
+            <span className="stat-card-title text-rose-800">Task Overdue</span>
+            <div className="stat-card-value text-rose-900">{summary?.overdue_tasks || 0}</div>
+            <span className="text-[11px] text-rose-700 block mt-1 font-semibold">perlu penanganan segera</span>
           </div>
 
-          <div className="stat-card">
-            <span className="stat-card-title text-green-700">Task Selesai</span>
-            <div className="stat-card-value text-green-700">{summary?.completed_tasks || 0}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">
+          <div className="stat-card bg-emerald-50/50 border-emerald-200/80">
+            <span className="stat-card-title text-emerald-800">Task Selesai</span>
+            <div className="stat-card-value text-emerald-950">{summary?.completed_tasks || 0}</div>
+            <span className="text-[11px] text-emerald-700 block mt-1">
               dari {summary?.total_tasks} total task
             </span>
           </div>
 
-          <div className="stat-card">
-            <span className="stat-card-title">Klien Terdaftar</span>
-            <div className="stat-card-value">{clients.length}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">klien aktif</span>
+          <div className="stat-card bg-indigo-50/50 border-indigo-200/80">
+            <span className="stat-card-title text-indigo-800">Klien Terdaftar</span>
+            <div className="stat-card-value text-indigo-950">{clients.length}</div>
+            <span className="text-[11px] text-indigo-700 block mt-1">klien aktif</span>
           </div>
         </div>
 

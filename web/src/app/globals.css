@@ -1,14 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  /* Hallmark Utilitarian OKLCH Color Tokens */
-  --color-paper: oklch(0.985 0.002 247.058);
-  --color-paper-2: oklch(0.965 0.005 247.058);
-  --color-paper-3: oklch(0.92 0.008 247.058);
-  --color-ink: oklch(0.145 0.02 247.058);
-  --color-ink-muted: oklch(0.45 0.015 247.058);
-  --color-accent: oklch(0.488 0.243 264.376);
-  --color-accent-hover: oklch(0.42 0.25 264.376);
+  /* Hallmark Utilitarian OKLCH Vibrant Color System */
+  --color-paper: oklch(0.985 0.003 247.058);
+  --color-paper-2: oklch(0.965 0.008 247.058);
+  --color-paper-3: oklch(0.92 0.012 247.058);
+  --color-ink: oklch(0.15 0.03 260.058);
+  --color-ink-muted: oklch(0.42 0.025 260.058);
+
+  /* Primary Action Accent */
+  --color-accent: oklch(0.48 0.22 260.000);
+  --color-accent-hover: oklch(0.40 0.24 260.000);
+
+  /* Vibrant Category Tokens */
+  --cat-backend-bg: #f0f9ff;
+  --cat-backend-border: #bae6fd;
+  --cat-backend-text: #0369a1;
+
+  --cat-design-bg: #faf5ff;
+  --cat-design-border: #e9d5ff;
+  --cat-design-text: #7e22ce;
+
+  --cat-frontend-bg: #ecfdf5;
+  --cat-frontend-border: #a7f3d0;
+  --cat-frontend-text: #047857;
+
+  --cat-devops-bg: #fff1f2;
+  --cat-devops-border: #fecdd3;
+  --cat-devops-text: #be123c;
+
   --font-display: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -29,8 +49,13 @@ body {
 .stat-card {
   background-color: #ffffff;
   border: 1px solid var(--color-paper-3);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 18px 20px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  border-color: #cbd5e1;
 }
 
 .stat-card-title {
@@ -42,10 +67,10 @@ body {
 }
 
 .stat-card-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
   line-height: 1.1;
   color: var(--color-ink);
-  margin-top: 4px;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
