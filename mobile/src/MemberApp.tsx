@@ -85,8 +85,16 @@ export const MemberApp: React.FC = () => {
 
   const fetchTasks = async (userId: number) => {
     try {
-      const data = await mobileApiRequest(`/tasks?assignee_id=${userId}`);
-      const taskList = data.data || [];
+      // First try fetching tasks assigned to member
+      let data = await mobileApiRequest(`/tasks?assignee_id=${userId}`);
+      let taskList = data.data || [];
+      
+      // If no task specifically assigned yet, fetch all project tasks so user sees the team tasks
+      if (taskList.length === 0) {
+        data = await mobileApiRequest('/tasks');
+        taskList = data.data || [];
+      }
+
       setTasks(taskList);
       generateInAppNotifications(taskList);
     } catch (err: any) {
