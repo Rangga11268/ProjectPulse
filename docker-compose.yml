@@ -12,6 +12,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  redis:
+    image: redis:alpine
+    container_name: projectpulse_redis
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: ./backend
@@ -28,8 +34,10 @@ services:
       DB_DATABASE: projectpulse
       DB_USERNAME: root
       DB_PASSWORD: secretpassword
+      REDIS_HOST: redis
     depends_on:
       - database
+      - redis
 
   web:
     build:
