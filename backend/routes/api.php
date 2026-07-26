@@ -17,20 +17,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-    // Admin Dashboard Summary
-    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    // Read Endpoints (Accessible by both Admin and Member)
+    Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
+    Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
 
-    // Admin Role Restricted Endpoints
+    // Admin Role Restricted Endpoints for Mutations (POST, PUT, DELETE)
     Route::middleware([\App\Http\Middleware\EnsureAdminRole::class])->group(function () {
-        Route::apiResource('clients', ClientController::class)->except(['index', 'show']);
-        Route::apiResource('projects', ProjectController::class)->except(['index', 'show']);
+        Route::post('/clients', [ClientController::class, 'store']);
+        Route::put('/clients/{client}', [ClientController::class, 'update']);
+        Route::delete('/clients/{client}', [ClientController::class, 'destroy']);
+
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::put('/projects/{project}', [ProjectController::class, 'update']);
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+
         Route::post('/projects/{project}/tasks/generate', [DashboardController::class, 'generateAiTasks']);
         Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
     });
-
-    // Read & General Endpoints
-    Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
-    Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
 
     // Tasks Management & Time Log Export
     Route::get('/tasks/export/csv', [TaskController::class, 'exportTimeLogsCsv']);
