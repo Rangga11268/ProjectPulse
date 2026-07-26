@@ -98,7 +98,11 @@ export const MemberApp: React.FC = () => {
       setTasks(taskList);
       generateInAppNotifications(taskList);
     } catch (err: any) {
-      console.error(err);
+      if (err.message && err.message.toLowerCase().includes('unauthenticated')) {
+        handleLogout();
+      } else {
+        console.error(err);
+      }
     }
   };
 
