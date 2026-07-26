@@ -33,6 +33,8 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import MemberApp from './MemberApp';
+
 setupIonicReact();
 
 const App: React.FC = () => (
@@ -40,7 +42,7 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonRouterOutlet>
         <Route exact path="/home">
-          <Home />
+          <MemberApp />
         </Route>
         <Route exact path="/">
           <Redirect to="/home" />

@@ -21,22 +21,21 @@ import {
   IonTextarea,
   IonToast,
   IonList,
-  IonRefresher,
-  IonRefresherContent,
+  IonSegment,
+  IonSegmentButton,
 } from '@ionic/react';
-import '@ionic/react/css/core.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-const API_BASE_URL = 'http://localhost:8000/api';
+import { mobileApiRequest } from './services/api';
 
 export const MemberApp: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
-  
+
   // Auth Form State
   const [email, setEmail] = useState('dev@bilcode.com');
   const [password, setPassword] = useState('password123');
+
+  // Navigation Segment: 'tasks' | 'notifications'
+  const [activeSegment, setActiveSegment] = useState<'tasks' | 'notifications'>('tasks');
 
   // Tasks & Filter State
   const [tasks, setTasks] = useState<any[]>([]);
@@ -47,89 +46,123 @@ export const MemberApp: React.FC = () => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [hoursInput, setHoursInput] = useState('2.5');
   const [noteInput, setNoteInput] = useState('');
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
   
   const [toastMessage, setToastMessage] = useState('');
+
+  // Check persistent login on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('mobile_token');
+    const savedUser = localStorage.getItem('mobile_user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      fetchTasks(parsedUser.id);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      const data = await mobileApiRequest('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (res.ok && data.data?.token) {
+      if (data.data?.token) {
+        localStorage.setItem('mobile_token', data.data.token);
+        localStorage.setItem('mobile_user', JSON.stringify(data.data.user));
         setToken(data.data.token);
         setUser(data.data.user);
-        fetchTasks(data.data.token, data.data.user.id);
-      } else {
-        setToastMessage(data.message || 'Login gagal.');
+        fetchTasks(data.data.user.id);
       }
-    } catch (err) {
-      setToastMessage('Gagal terhubung ke backend API.');
+    } catch (err: any) {
+      setToastMessage(err.message || 'Login gagal.');
     }
   };
 
-  const fetchTasks = async (authToken: string, userId: number) => {
+  const fetchTasks = async (userId: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/tasks?assignee_id=${userId}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setTasks(data.data || []);
-      }
-    } catch (err) {
+      const data = await mobileApiRequest(`/tasks?assignee_id=${userId}`);
+      const taskList = data.data || [];
+      setTasks(taskList);
+      generateInAppNotifications(taskList);
+    } catch (err: any) {
       console.error(err);
     }
   };
 
+  const generateInAppNotifications = (taskList: any[]) => {
+    const notifs: any[] = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    taskList.forEach((t) => {
+      if (t.status !== 'done') {
+        notifs.push({
+          id: `new-${t.id}`,
+          title: 'Tugas Baru Di-assign',
+          message: `Kamu mendapatkan tugas baru: "${t.title}" pada proyek ${t.project?.name || ''}.`,
+          date: t.created_at || 'Hari ini',
+          type: 'info',
+        });
+      }
+
+      if (t.deadline && t.status !== 'done') {
+        notifs.push({
+          id: `deadline-${t.id}`,
+          title: 'Pengingat Deadline Tugas',
+          message: `Tugas "${t.title}" jatuh tempo pada ${t.deadline}. Segera perbarui progres!`,
+          date: t.deadline,
+          type: 'warning',
+        });
+      }
+    });
+
+    setNotifications(notifs);
+  };
+
   const handleUpdateStatus = async (taskId: number, newStatus: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/status`, {
+      await mobileApiRequest(`/tasks/${taskId}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
-        setToastMessage('Status task berhasil diperbarui!');
-        fetchTasks(token!, user.id);
-        if (selectedTask?.id === taskId) {
-          setSelectedTask({ ...selectedTask, status: newStatus });
-        }
+      setToastMessage('Status task berhasil diperbarui!');
+      fetchTasks(user.id);
+      if (selectedTask?.id === taskId) {
+        setSelectedTask({ ...selectedTask, status: newStatus });
       }
-    } catch (err) {
-      setToastMessage('Gagal memperbarui status task.');
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gagal memperbarui status task.');
     }
   };
 
   const handleAddTimeLog = async () => {
     if (!selectedTask || !hoursInput || !noteInput) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/tasks/${selectedTask.id}/time-logs`, {
+      await mobileApiRequest(`/tasks/${selectedTask.id}/time-logs`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           hours: parseFloat(hoursInput),
           note: noteInput,
         }),
       });
-      if (res.ok) {
-        setToastMessage('Log waktu kerja berhasil dicatat!');
-        setShowLogModal(false);
-        setNoteInput('');
-        fetchTasks(token!, user.id);
-      }
-    } catch (err) {
-      setToastMessage('Gagal menambah log waktu.');
+      setToastMessage('Log waktu kerja berhasil dicatat!');
+      setShowLogModal(false);
+      setNoteInput('');
+      fetchTasks(user.id);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gagal menambah log waktu.');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('mobile_token');
+    localStorage.removeItem('mobile_user');
+    setToken(null);
+    setUser(null);
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -193,71 +226,108 @@ export const MemberApp: React.FC = () => {
       <IonHeader>
         <IonToolbar color="primary">
           <IonTitle>Tugasku ({user?.name})</IonTitle>
-          <IonButton
-            slot="end"
-            fill="clear"
-            color="light"
-            onClick={() => {
-              setToken(null);
-              setUser(null);
-            }}
-          >
+          <IonButton slot="end" fill="clear" color="light" onClick={handleLogout}>
             Logout
           </IonButton>
+        </IonToolbar>
+        <IonToolbar>
+          <IonSegment
+            value={activeSegment}
+            onIonChange={(e) => setActiveSegment(e.detail.value as any)}
+          >
+            <IonSegmentButton value="tasks">
+              <IonLabel>Daftar Tugas ({tasks.length})</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="notifications">
+              <IonLabel>
+                Notifikasi {notifications.length > 0 && `(${notifications.length})`}
+              </IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
-        {/* Status Filter */}
-        <IonItem className="ion-margin-bottom">
-          <IonLabel>Filter Status Task</IonLabel>
-          <IonSelect
-            value={statusFilter}
-            onIonChange={(e) => setStatusFilter(e.detail.value)}
-          >
-            <IonSelectOption value="all">Semua Task</IonSelectOption>
-            <IonSelectOption value="todo">To Do</IonSelectOption>
-            <IonSelectOption value="in_progress">In Progress</IonSelectOption>
-            <IonSelectOption value="review">Review</IonSelectOption>
-            <IonSelectOption value="done">Done</IonSelectOption>
-          </IonSelect>
-        </IonItem>
+        {activeSegment === 'tasks' && (
+          <>
+            {/* Status Filter */}
+            <IonItem className="ion-margin-bottom">
+              <IonLabel>Filter Status</IonLabel>
+              <IonSelect
+                value={statusFilter}
+                onIonChange={(e) => setStatusFilter(e.detail.value)}
+              >
+                <IonSelectOption value="all">Semua Task</IonSelectOption>
+                <IonSelectOption value="todo">To Do</IonSelectOption>
+                <IonSelectOption value="in_progress">In Progress</IonSelectOption>
+                <IonSelectOption value="review">Review</IonSelectOption>
+                <IonSelectOption value="done">Done</IonSelectOption>
+              </IonSelect>
+            </IonItem>
 
-        {/* Task Cards List */}
-        <IonList>
-          {filteredTasks.map((t) => (
-            <IonCard key={t.id} button onClick={() => setSelectedTask(t)}>
-              <IonCardHeader>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <IonBadge color={t.category === 'backend' ? 'tertiary' : 'secondary'}>
-                    {t.category}
-                  </IonBadge>
-                  <IonBadge
-                    color={
-                      t.status === 'done'
-                        ? 'success'
-                        : t.status === 'in_progress'
-                        ? 'warning'
-                        : 'medium'
-                    }
-                  >
-                    {t.status}
-                  </IonBadge>
-                </div>
-                <IonCardTitle style={{ fontSize: '1rem', marginTop: '8px' }}>
-                  {t.title}
-                </IonCardTitle>
-                <IonCardSubtitle>Proyek: {t.project?.name || '-'}</IonCardSubtitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <p>{t.description}</p>
-                <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#666' }}>
-                  Estimasi: {t.estimated_hours} jam | Deadline: {t.deadline || '-'}
-                </div>
-              </IonCardContent>
-            </IonCard>
-          ))}
-        </IonList>
+            {/* Task Cards List */}
+            <IonList>
+              {filteredTasks.map((t) => (
+                <IonCard key={t.id} button onClick={() => setSelectedTask(t)}>
+                  <IonCardHeader>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <IonBadge color={t.category === 'backend' ? 'tertiary' : 'secondary'}>
+                        {t.category}
+                      </IonBadge>
+                      <IonBadge
+                        color={
+                          t.status === 'done'
+                            ? 'success'
+                            : t.status === 'in_progress'
+                            ? 'warning'
+                            : 'medium'
+                        }
+                      >
+                        {t.status}
+                      </IonBadge>
+                    </div>
+                    <IonCardTitle style={{ fontSize: '1rem', marginTop: '8px' }}>
+                      {t.title}
+                    </IonCardTitle>
+                    <IonCardSubtitle>Proyek: {t.project?.name || '-'}</IonCardSubtitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <p>{t.description}</p>
+                    <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#666' }}>
+                      Estimasi: {t.estimated_hours} jam | Deadline: {t.deadline || '-'}
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              ))}
+            </IonList>
+          </>
+        )}
+
+        {activeSegment === 'notifications' && (
+          <IonList>
+            {notifications.length === 0 ? (
+              <IonItem>
+                <IonLabel className="ion-text-center">Tidak ada notifikasi baru.</IonLabel>
+              </IonItem>
+            ) : (
+              notifications.map((n) => (
+                <IonCard key={n.id}>
+                  <IonCardHeader>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <IonCardTitle style={{ fontSize: '0.95rem' }}>{n.title}</IonCardTitle>
+                      <IonBadge color={n.type === 'warning' ? 'warning' : 'primary'}>
+                        {n.date}
+                      </IonBadge>
+                    </div>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <p style={{ fontSize: '0.85rem' }}>{n.message}</p>
+                  </IonCardContent>
+                </IonCard>
+              ))
+            )}
+          </IonList>
+        )}
 
         {/* Task Detail Modal */}
         <IonModal isOpen={!!selectedTask} onDidDismiss={() => setSelectedTask(null)}>
