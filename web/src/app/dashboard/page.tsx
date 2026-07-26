@@ -249,6 +249,21 @@ export default function DashboardPage() {
     }
   };
 
+  const formatStatusLabel = (status: string) => {
+    switch (status) {
+      case 'in_progress':
+        return 'IN PROGRESS';
+      case 'todo':
+        return 'TO DO';
+      case 'review':
+        return 'REVIEW';
+      case 'done':
+        return 'DONE';
+      default:
+        return status ? status.toUpperCase() : '-';
+    }
+  };
+
   const handleExportCsv = () => {
     const token = localStorage.getItem('token');
     window.open(`http://localhost:8000/api/tasks/export/csv?token=${token}`, '_blank');
@@ -515,7 +530,7 @@ export default function DashboardPage() {
                             : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {t.status}
+                        {formatStatusLabel(t.status)}
                       </span>
                     </td>
                     <td className="p-3.5 font-semibold">{t.estimated_hours} Jam</td>
