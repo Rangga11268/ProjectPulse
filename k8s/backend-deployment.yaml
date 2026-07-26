@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: rangga11268/projectpulse-backend:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: projectpulse-config
+        env:
+        - name: APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: projectpulse-secret
+              key: APP_KEY
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: projectpulse-secret
+              key: DB_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

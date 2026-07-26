@@ -1,0 +1,68 @@
+name: ProjectPulse CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: projectpulse_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, pdo, pdo_mysql, ctype, xml, json
+        coverage: none
+
+    - name: Install Composer Dependencies
+      run: |
+        cd backend
+        composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Run Migrations & Tests
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: projectpulse_test
+        DB_USERNAME: root
+        DB_PASSWORD: root
+        APP_KEY: base64:V/tQ3oQ+W0WvD2O3D3s4b8G5a6b7c8d9e0f1a2b3c4d=
+      run: |
+        cd backend
+        php artisan migrate --force
+        php artisan test
+
+  web-build:
+    name: Web Frontend Build Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install & Build Next.js Web
+      run: |
+        cd web
+        npm ci
+        npm run build

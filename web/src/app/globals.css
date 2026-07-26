@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  /* Hallmark Token Architecture: Studio / Utilitarian Theme (OKLCH Color Space) */
+  --color-paper: oklch(0.985 0.002 247);
+  --color-paper-2: oklch(0.96 0.005 247);
+  --color-paper-3: oklch(0.92 0.008 247);
+  --color-ink: oklch(0.18 0.02 247);
+  --color-ink-muted: oklch(0.48 0.02 247);
+  
+  --color-accent: oklch(0.55 0.18 247);       /* Bilcode Tech Primary Blue */
+  --color-accent-hover: oklch(0.48 0.20 247);
+  
+  --color-success: oklch(0.62 0.17 145);      /* Green for done/completed */
+  --color-warning: oklch(0.72 0.16 75);       /* Amber for review/hold */
+  --color-danger: oklch(0.58 0.22 25);        /* Red for overdue/todo */
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+html, body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: clip;
+  min-width: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-paper-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-paper-3);
+  border-radius: var(--radius-sm);
+}

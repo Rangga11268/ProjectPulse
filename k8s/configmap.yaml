@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: projectpulse-config
+data:
+  APP_ENV: "production"
+  APP_URL: "http://projectpulse.local"
+  DB_HOST: "mysql-service"
+  DB_PORT: "3306"
+  DB_DATABASE: "projectpulse"
+  NEXT_PUBLIC_API_URL: "http://projectpulse.local/api"
