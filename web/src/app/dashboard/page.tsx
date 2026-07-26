@@ -279,7 +279,7 @@ export default function DashboardPage() {
             ProjectPulse
           </span>
           <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-bold uppercase tracking-wider border border-gray-200">
-            Admin Console
+            {user?.role === 'admin' ? 'Admin Console' : 'Member Workspace'}
           </span>
         </div>
         <div className="flex items-center gap-5 text-xs font-medium text-[var(--color-ink-muted)]">

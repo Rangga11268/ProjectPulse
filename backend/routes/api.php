@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Read Endpoints (Accessible by both Admin and Member)
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
     Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
 
