@@ -71,7 +71,12 @@ export default function DashboardPage() {
         setTaskForm((prev) => ({ ...prev, project_id: projRes.data[0].id }));
       }
     } catch (err: any) {
-      console.error(err);
+      if (err.message && err.message.toLowerCase().includes('unauthenticated')) {
+        localStorage.clear();
+        router.push('/login');
+      } else {
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
