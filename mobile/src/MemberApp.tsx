@@ -34,8 +34,8 @@ export const MemberApp: React.FC = () => {
   const [email, setEmail] = useState('dev@bilcode.com');
   const [password, setPassword] = useState('password123');
 
-  // Navigation Segment: 'tasks' | 'notifications'
-  const [activeSegment, setActiveSegment] = useState<'tasks' | 'notifications'>('tasks');
+  // Navigation Segment: 'tasks' | 'history' | 'notifications'
+  const [activeSegment, setActiveSegment] = useState<'tasks' | 'history' | 'notifications'>('tasks');
 
   // Tasks & Filter State
   const [tasks, setTasks] = useState<any[]>([]);
@@ -96,7 +96,6 @@ export const MemberApp: React.FC = () => {
 
   const generateInAppNotifications = (taskList: any[]) => {
     const notifs: any[] = [];
-    const today = new Date().toISOString().split('T')[0];
 
     taskList.forEach((t) => {
       if (t.status !== 'done') {
@@ -165,10 +164,8 @@ export const MemberApp: React.FC = () => {
     setUser(null);
   };
 
-  const filteredTasks = tasks.filter((t) => {
-    if (statusFilter === 'all') return true;
-    return t.status === statusFilter;
-  });
+  const activeTasks = tasks.filter((t) => t.status !== 'done' && (statusFilter === 'all' || t.status === statusFilter));
+  const completedTasks = tasks.filter((t) => t.status === 'done');
 
   if (!token) {
     return (
@@ -236,53 +233,44 @@ export const MemberApp: React.FC = () => {
             onIonChange={(e) => setActiveSegment(e.detail.value as any)}
           >
             <IonSegmentButton value="tasks">
-              <IonLabel>Daftar Tugas ({tasks.length})</IonLabel>
+              <IonLabel>Aktif ({activeTasks.length})</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="history">
+              <IonLabel>Riwayat Selesai ({completedTasks.length})</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="notifications">
-              <IonLabel>
-                Notifikasi {notifications.length > 0 && `(${notifications.length})`}
-              </IonLabel>
+              <IonLabel>Notifikasi</IonLabel>
             </IonSegmentButton>
           </IonSegment>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
+        {/* Active Tasks Tab */}
         {activeSegment === 'tasks' && (
           <>
-            {/* Status Filter */}
             <IonItem className="ion-margin-bottom">
               <IonLabel>Filter Status</IonLabel>
               <IonSelect
                 value={statusFilter}
                 onIonChange={(e) => setStatusFilter(e.detail.value)}
               >
-                <IonSelectOption value="all">Semua Task</IonSelectOption>
+                <IonSelectOption value="all">Semua Task Aktif</IonSelectOption>
                 <IonSelectOption value="todo">To Do</IonSelectOption>
                 <IonSelectOption value="in_progress">In Progress</IonSelectOption>
                 <IonSelectOption value="review">Review</IonSelectOption>
-                <IonSelectOption value="done">Done</IonSelectOption>
               </IonSelect>
             </IonItem>
 
-            {/* Task Cards List */}
             <IonList>
-              {filteredTasks.map((t) => (
+              {activeTasks.map((t) => (
                 <IonCard key={t.id} button onClick={() => setSelectedTask(t)}>
                   <IonCardHeader>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <IonBadge color={t.category === 'backend' ? 'tertiary' : 'secondary'}>
                         {t.category}
                       </IonBadge>
-                      <IonBadge
-                        color={
-                          t.status === 'done'
-                            ? 'success'
-                            : t.status === 'in_progress'
-                            ? 'warning'
-                            : 'medium'
-                        }
-                      >
+                      <IonBadge color={t.status === 'in_progress' ? 'warning' : 'medium'}>
                         {t.status}
                       </IonBadge>
                     </div>
@@ -303,6 +291,39 @@ export const MemberApp: React.FC = () => {
           </>
         )}
 
+        {/* History Tab for Completed Tasks */}
+        {activeSegment === 'history' && (
+          <IonList>
+            {completedTasks.length === 0 ? (
+              <IonItem>
+                <IonLabel className="ion-text-center">Belum ada tugas yang selesai.</IonLabel>
+              </IonItem>
+            ) : (
+              completedTasks.map((t) => (
+                <IonCard key={t.id} button onClick={() => setSelectedTask(t)}>
+                  <IonCardHeader>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <IonBadge color="success">SELESAI</IonBadge>
+                      <span style={{ fontSize: '0.75rem', color: '#666' }}>{t.deadline || '-'}</span>
+                    </div>
+                    <IonCardTitle style={{ fontSize: '1rem', marginTop: '8px' }}>
+                      {t.title}
+                    </IonCardTitle>
+                    <IonCardSubtitle>Proyek: {t.project?.name || '-'}</IonCardSubtitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <p>{t.description}</p>
+                    <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#2dd36f', fontWeight: 'bold' }}>
+                      ✓ Task Selesai — Total {t.time_logs?.reduce((acc: number, l: any) => acc + Number(l.hours), 0) || 0} jam dicatat
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              ))
+            )}
+          </IonList>
+        )}
+
+        {/* Notifications Tab */}
         {activeSegment === 'notifications' && (
           <IonList>
             {notifications.length === 0 ? (

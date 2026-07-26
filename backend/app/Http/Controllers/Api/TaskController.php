@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\TimeLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class TaskController extends Controller
 {
@@ -14,19 +15,19 @@ class TaskController extends Controller
     {
         $query = Task::with(['project.client', 'assignee', 'timeLogs']);
 
-        if ($request->has('project_id')) {
+        if ($request->has('project_id') && $request->project_id != '') {
             $query->where('project_id', $request->project_id);
         }
 
-        if ($request->has('assignee_id')) {
+        if ($request->has('assignee_id') && $request->assignee_id != '') {
             $query->where('assignee_id', $request->assignee_id);
         }
 
-        if ($request->has('status')) {
+        if ($request->has('status') && $request->status != '') {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('category')) {
+        if ($request->has('category') && $request->category != '') {
             $query->where('category', $request->category);
         }
 
@@ -51,7 +52,7 @@ class TaskController extends Controller
         ]);
 
         $task = $project->tasks()->create($validated);
-        $task->load(['assignee']);
+        $task->load(['assignee', 'project.client']);
 
         return response()->json([
             'status' => 'success',
@@ -73,6 +74,7 @@ class TaskController extends Controller
     public function update(Request $request, Task $task)
     {
         $validated = $request->validate([
+            'project_id' => 'sometimes|required|exists:projects,id',
             'assignee_id' => 'nullable|exists:users,id',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
@@ -83,7 +85,7 @@ class TaskController extends Controller
         ]);
 
         $task->update($validated);
-        $task->load(['assignee']);
+        $task->load(['assignee', 'project.client']);
 
         return response()->json([
             'status' => 'success',
@@ -127,6 +129,40 @@ class TaskController extends Controller
             'message' => 'Log waktu kerja berhasil ditambahkan.',
             'data' => $timeLog,
         ], 201);
+    }
+
+    public function exportTimeLogsCsv()
+    {
+        $logs = TimeLog::with(['task.project', 'user'])->latest()->get();
+
+        $filename = "work_hours_report_".date('Y-m-d').".csv";
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $callback = function() use ($logs) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Log ID', 'Member', 'Proyek', 'Task Title', 'Jam Kerja', 'Catatan Progres', 'Tanggal']);
+
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    $log->id,
+                    $log->user->name ?? '-',
+                    $log->task->project->name ?? '-',
+                    $log->task->title ?? '-',
+                    $log->hours,
+                    $log->note,
+                    $log->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 
     public function destroy(Task $task)

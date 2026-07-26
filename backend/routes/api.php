@@ -27,7 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('projects', ProjectController::class);
     Route::post('/projects/{project}/tasks/generate', [DashboardController::class, 'generateAiTasks']);
 
-    // Tasks Management
+    // Tasks Management & Time Log Export
+    Route::get('/tasks/export/csv', [TaskController::class, 'exportTimeLogsCsv']);
     Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store']);
     Route::get('/tasks', [TaskController::class, 'index']);

@@ -22,10 +22,22 @@ spec:
         envFrom:
         - configMapRef:
             name: projectpulse-config
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
             memory: "128Mi"
-            cpu: "200m"
+            cpu: "100m"
           limits:
             memory: "512Mi"
             cpu: "500m"

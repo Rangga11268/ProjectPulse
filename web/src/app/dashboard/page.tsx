@@ -8,19 +8,28 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  // Tab State: 'projects' | 'clients'
-  const [activeTab, setActiveTab] = useState<'projects' | 'clients'>('projects');
+  // Tab State: 'projects' | 'clients' | 'tasks'
+  const [activeTab, setActiveTab] = useState<'projects' | 'clients' | 'tasks'>('projects');
 
-  // New Client Modal
+  // Client Modal State (Create / Edit)
   const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<any>(null);
   const [clientForm, setClientForm] = useState({ name: '', contact_person: '', email: '', company: '' });
 
-  // New Project Modal
+  // Project Modal State (Create / Edit)
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<any>(null);
   const [projectForm, setProjectForm] = useState({ client_id: '', name: '', description: '', client_brief: '', deadline: '', status: 'planning' });
+
+  // Task Modal State (Create / Edit)
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [taskForm, setTaskForm] = useState({ project_id: '', assignee_id: '', title: '', description: '', category: 'backend', status: 'todo', estimated_hours: 8, deadline: '' });
 
   // AI Task Breakdown Modal State
   const [showAiModal, setShowAiModal] = useState(false);
@@ -43,16 +52,23 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [sumRes, projRes, clientRes] = await Promise.all([
+      const [sumRes, projRes, clientRes, taskRes] = await Promise.all([
         apiRequest('/dashboard/summary'),
         apiRequest('/projects'),
         apiRequest('/clients'),
+        apiRequest('/tasks'),
       ]);
       setSummary(sumRes.data);
       setProjects(projRes.data);
       setClients(clientRes.data);
+      setTasks(taskRes.data);
+      setMembers(sumRes.data?.workload_per_member || []);
+      
       if (clientRes.data.length > 0 && !projectForm.client_id) {
         setProjectForm((prev) => ({ ...prev, client_id: clientRes.data[0].id }));
+      }
+      if (projRes.data.length > 0 && !taskForm.project_id) {
+        setTaskForm((prev) => ({ ...prev, project_id: projRes.data[0].id }));
       }
     } catch (err: any) {
       console.error(err);
@@ -61,19 +77,39 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCreateClient = async (e: React.FormEvent) => {
+  // CLIENT HANDLERS
+  const handleOpenCreateClient = () => {
+    setEditingClient(null);
+    setClientForm({ name: '', contact_person: '', email: '', company: '' });
+    setShowClientModal(true);
+  };
+
+  const handleOpenEditClient = (c: any) => {
+    setEditingClient(c);
+    setClientForm({ name: c.name, contact_person: c.contact_person, email: c.email, company: c.company });
+    setShowClientModal(true);
+  };
+
+  const handleSaveClient = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiRequest('/clients', {
-        method: 'POST',
-        body: JSON.stringify(clientForm),
-      });
+      if (editingClient) {
+        await apiRequest(`/clients/${editingClient.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(clientForm),
+        });
+        alert('Klien berhasil diperbarui!');
+      } else {
+        await apiRequest('/clients', {
+          method: 'POST',
+          body: JSON.stringify(clientForm),
+        });
+        alert('Klien berhasil ditambahkan!');
+      }
       setShowClientModal(false);
-      setClientForm({ name: '', contact_person: '', email: '', company: '' });
       fetchDashboardData();
-      alert('Klien berhasil ditambahkan!');
     } catch (err: any) {
-      alert(err.message || 'Gagal membuat klien.');
+      alert(err.message || 'Gagal menyimpan klien.');
     }
   };
 
@@ -87,19 +123,39 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCreateProject = async (e: React.FormEvent) => {
+  // PROJECT HANDLERS
+  const handleOpenCreateProject = () => {
+    setEditingProject(null);
+    setProjectForm({ client_id: clients[0]?.id || '', name: '', description: '', client_brief: '', deadline: '', status: 'planning' });
+    setShowProjectModal(true);
+  };
+
+  const handleOpenEditProject = (p: any) => {
+    setEditingProject(p);
+    setProjectForm({ client_id: p.client_id, name: p.name, description: p.description || '', client_brief: p.client_brief || '', deadline: p.deadline, status: p.status });
+    setShowProjectModal(true);
+  };
+
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiRequest('/projects', {
-        method: 'POST',
-        body: JSON.stringify(projectForm),
-      });
+      if (editingProject) {
+        await apiRequest(`/projects/${editingProject.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(projectForm),
+        });
+        alert('Proyek berhasil diperbarui!');
+      } else {
+        await apiRequest('/projects', {
+          method: 'POST',
+          body: JSON.stringify(projectForm),
+        });
+        alert('Proyek berhasil dibuat!');
+      }
       setShowProjectModal(false);
-      setProjectForm({ client_id: clients[0]?.id || '', name: '', description: '', client_brief: '', deadline: '', status: 'planning' });
       fetchDashboardData();
-      alert('Proyek berhasil dibuat!');
     } catch (err: any) {
-      alert(err.message || 'Gagal membuat proyek.');
+      alert(err.message || 'Gagal menyimpan proyek.');
     }
   };
 
@@ -113,6 +169,53 @@ export default function DashboardPage() {
     }
   };
 
+  // TASK HANDLERS
+  const handleOpenCreateTask = () => {
+    setEditingTask(null);
+    setTaskForm({ project_id: projects[0]?.id || '', assignee_id: members[0]?.id || '', title: '', description: '', category: 'backend', status: 'todo', estimated_hours: 8, deadline: '' });
+    setShowTaskModal(true);
+  };
+
+  const handleOpenEditTask = (t: any) => {
+    setEditingTask(t);
+    setTaskForm({ project_id: t.project_id, assignee_id: t.assignee_id || '', title: t.title, description: t.description || '', category: t.category, status: t.status, estimated_hours: t.estimated_hours, deadline: t.deadline || '' });
+    setShowTaskModal(true);
+  };
+
+  const handleSaveTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTask) {
+        await apiRequest(`/tasks/${editingTask.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(taskForm),
+        });
+        alert('Task berhasil diperbarui!');
+      } else {
+        await apiRequest(`/projects/${taskForm.project_id}/tasks`, {
+          method: 'POST',
+          body: JSON.stringify(taskForm),
+        });
+        alert('Task baru berhasil ditambahkan!');
+      }
+      setShowTaskModal(false);
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(err.message || 'Gagal menyimpan task.');
+    }
+  };
+
+  const handleDeleteTask = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus task ini?')) return;
+    try {
+      await apiRequest(`/tasks/${id}`, { method: 'DELETE' });
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(err.message || 'Gagal menghapus task.');
+    }
+  };
+
+  // AI TASK HANDLERS
   const handleGenerateAiTasks = async () => {
     if (!selectedProjectId || !briefInput) return;
     setAiLoading(true);
@@ -129,6 +232,12 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateAiTaskField = (idx: number, field: string, val: any) => {
+    const updated = [...aiTasks];
+    updated[idx] = { ...updated[idx], [field]: val };
+    setAiTasks(updated);
+  };
+
   const handleSaveAiTask = async (task: any) => {
     if (!selectedProjectId) return;
     try {
@@ -143,10 +252,16 @@ export default function DashboardPage() {
         }),
       });
       setAiTasks(aiTasks.filter((t) => t.title !== task.title));
+      alert(`Task "${task.title}" berhasil disimpan!`);
       fetchDashboardData();
     } catch (err: any) {
       alert(err.message || 'Gagal menyimpan task.');
     }
+  };
+
+  const handleExportCsv = () => {
+    const token = localStorage.getItem('token');
+    window.open(`http://localhost:8000/api/tasks/export/csv?token=${token}`, '_blank');
   };
 
   const handleLogout = () => {
@@ -223,7 +338,17 @@ export default function DashboardPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              Manajemen Proyek
+              Manajemen Proyek ({projects.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                activeTab === 'tasks'
+                  ? 'bg-[var(--color-accent)] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Manajemen Task ({tasks.length})
             </button>
             <button
               onClick={() => setActiveTab('clients')}
@@ -233,7 +358,7 @@ export default function DashboardPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              Manajemen Klien
+              Manajemen Klien ({clients.length})
             </button>
           </div>
 
@@ -241,7 +366,7 @@ export default function DashboardPage() {
             {activeTab === 'projects' && (
               <>
                 <button
-                  onClick={() => setShowProjectModal(true)}
+                  onClick={handleOpenCreateProject}
                   className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
                 >
                   + Proyek Baru
@@ -261,9 +386,26 @@ export default function DashboardPage() {
               </>
             )}
 
+            {activeTab === 'tasks' && (
+              <>
+                <button
+                  onClick={handleOpenCreateTask}
+                  className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
+                >
+                  + Task Baru
+                </button>
+                <button
+                  onClick={handleExportCsv}
+                  className="px-3 py-2 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  📊 Ekspor Laporan CSV
+                </button>
+              </>
+            )}
+
             {activeTab === 'clients' && (
               <button
-                onClick={() => setShowClientModal(true)}
+                onClick={handleOpenCreateClient}
                 className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
               >
                 + Klien Baru
@@ -313,7 +455,13 @@ export default function DashboardPage() {
                       {proj.completed_tasks_count} / {proj.tasks_count} Task Done
                     </td>
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{proj.deadline}</td>
-                    <td className="p-3.5 text-right">
+                    <td className="p-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => handleOpenEditProject(proj)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDeleteProject(proj.id)}
                         className="text-red-600 hover:text-red-800 text-xs font-medium"
@@ -328,7 +476,75 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab 2: Clients Table */}
+        {/* Tab 2: Tasks Table */}
+        {activeTab === 'tasks' && (
+          <div className="bg-white border border-[var(--color-paper-3)] rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-semibold uppercase">
+                  <th className="p-3.5">Judul Task</th>
+                  <th className="p-3.5">Proyek</th>
+                  <th className="p-3.5">Assignee</th>
+                  <th className="p-3.5">Kategori</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Jam Kerja</th>
+                  <th className="p-3.5 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-paper-2)]">
+                {tasks.map((t) => (
+                  <tr key={t.id} className="hover:bg-[var(--color-paper)] transition">
+                    <td className="p-3.5 font-medium text-[var(--color-ink)]">
+                      {t.title}
+                      {t.description && (
+                        <span className="block text-[11px] text-[var(--color-ink-muted)] truncate max-w-xs mt-0.5">
+                          {t.description}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-[var(--color-ink-muted)]">{t.project?.name || '-'}</td>
+                    <td className="p-3.5 font-medium">{t.assignee?.name || 'Unassigned'}</td>
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-800 text-[10px] font-bold uppercase rounded">
+                        {t.category}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
+                      <span
+                        className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase rounded ${
+                          t.status === 'done'
+                            ? 'bg-green-100 text-green-800'
+                            : t.status === 'in_progress'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-semibold">{t.estimated_hours} Jam</td>
+                    <td className="p-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => handleOpenEditTask(t)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(t.id)}
+                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                      >
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Tab 3: Clients Table */}
         {activeTab === 'clients' && (
           <div className="bg-white border border-[var(--color-paper-3)] rounded-xl overflow-hidden shadow-xs">
             <table className="w-full text-left border-collapse text-xs">
@@ -350,7 +566,13 @@ export default function DashboardPage() {
                     <td className="p-3.5">{c.contact_person}</td>
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{c.email}</td>
                     <td className="p-3.5 font-semibold">{c.projects_count || 0} Proyek</td>
-                    <td className="p-3.5 text-right">
+                    <td className="p-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => handleOpenEditClient(c)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDeleteClient(c.id)}
                         className="text-red-600 hover:text-red-800 text-xs font-medium"
@@ -366,15 +588,17 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* New Client Modal */}
+      {/* Client Modal (Create / Edit) */}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">+ Tambah Klien Baru</h3>
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
+                {editingClient ? 'Edit Data Klien' : '+ Tambah Klien Baru'}
+              </h3>
               <button onClick={() => setShowClientModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <form onSubmit={handleCreateClient} className="space-y-3">
+            <form onSubmit={handleSaveClient} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Nama Klien</label>
                 <input
@@ -416,22 +640,24 @@ export default function DashboardPage() {
                 />
               </div>
               <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
-                Simpan Klien
+                {editingClient ? 'Update Klien' : 'Simpan Klien'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* New Project Modal */}
+      {/* Project Modal (Create / Edit) */}
       {showProjectModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">+ Buat Proyek Baru</h3>
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
+                {editingProject ? 'Edit Data Proyek' : '+ Buat Proyek Baru'}
+              </h3>
               <button onClick={() => setShowProjectModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <form onSubmit={handleCreateProject} className="space-y-3">
+            <form onSubmit={handleSaveProject} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Klien Terkait</label>
                 <select
@@ -477,7 +703,98 @@ export default function DashboardPage() {
                 />
               </div>
               <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
-                Simpan Proyek
+                {editingProject ? 'Update Proyek' : 'Simpan Proyek'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Task Modal (Create / Edit) */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
+            <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
+                {editingTask ? 'Edit Task' : '+ Tambah Task Baru'}
+              </h3>
+              <button onClick={() => setShowTaskModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <form onSubmit={handleSaveTask} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Proyek Target</label>
+                <select
+                  value={taskForm.project_id}
+                  onChange={(e) => setTaskForm({ ...taskForm, project_id: e.target.value })}
+                  className="w-full text-xs p-2.5 border rounded-lg"
+                  disabled={!!editingTask}
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Assignee Member</label>
+                <select
+                  value={taskForm.assignee_id}
+                  onChange={(e) => setTaskForm({ ...taskForm, assignee_id: e.target.value })}
+                  className="w-full text-xs p-2.5 border rounded-lg"
+                >
+                  <option value="">Unassigned</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Judul Task</label>
+                <input
+                  type="text"
+                  required
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  className="w-full text-xs p-2.5 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Kategori & Status</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={taskForm.category}
+                    onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
+                    className="w-full text-xs p-2.5 border rounded-lg"
+                  >
+                    <option value="backend">Backend</option>
+                    <option value="frontend">Frontend</option>
+                    <option value="design">Design</option>
+                    <option value="QA">QA</option>
+                  </select>
+                  <select
+                    value={taskForm.status}
+                    onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
+                    className="w-full text-xs p-2.5 border rounded-lg"
+                  >
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="done">Done</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Estimasi Jam Kerja</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={taskForm.estimated_hours}
+                  onChange={(e) => setTaskForm({ ...taskForm, estimated_hours: Number(e.target.value) })}
+                  className="w-full text-xs p-2.5 border rounded-lg"
+                />
+              </div>
+              <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
+                {editingTask ? 'Update Task' : 'Simpan Task'}
               </button>
             </form>
           </div>
@@ -536,31 +853,47 @@ export default function DashboardPage() {
               {aiLoading ? '🤖 Memproses Brief via LLM API...' : 'Hasilkan Rekomendasi Task'}
             </button>
 
-            {/* AI Suggested Tasks Results */}
+            {/* AI Suggested Tasks Results with Inline Editing */}
             {aiTasks.length > 0 && (
-              <div className="space-y-2 mt-4 max-h-60 overflow-y-auto">
-                <span className="text-xs font-bold text-[var(--color-ink)] block">Hasil Saran AI:</span>
+              <div className="space-y-3 mt-4 max-h-60 overflow-y-auto">
+                <span className="text-xs font-bold text-[var(--color-ink)] block">Edit & Sesuaikan Saran AI:</span>
                 {aiTasks.map((t, idx) => (
                   <div
                     key={idx}
-                    className="p-3 border border-[var(--color-paper-3)] rounded-lg flex items-center justify-between text-xs bg-[var(--color-paper)]"
+                    className="p-3 border border-[var(--color-paper-3)] rounded-lg text-xs bg-[var(--color-paper)] space-y-2"
                   >
-                    <div>
-                      <span className="font-semibold text-[var(--color-ink)] block">{t.title}</span>
-                      <span className="text-[11px] text-[var(--color-ink-muted)]">{t.description}</span>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] rounded font-bold uppercase">
-                          {t.category}
-                        </span>
-                        <span className="text-[10px] text-gray-500">{t.estimated_hours} jam kerja</span>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={t.title}
+                        onChange={(e) => handleUpdateAiTaskField(idx, 'title', e.target.value)}
+                        className="col-span-2 p-1.5 border rounded font-semibold text-[var(--color-ink)]"
+                      />
+                      <select
+                        value={t.category}
+                        onChange={(e) => handleUpdateAiTaskField(idx, 'category', e.target.value)}
+                        className="p-1.5 border rounded font-bold uppercase"
+                      >
+                        <option value="backend">backend</option>
+                        <option value="frontend">frontend</option>
+                        <option value="design">design</option>
+                        <option value="QA">QA</option>
+                      </select>
                     </div>
-                    <button
-                      onClick={() => handleSaveAiTask(t)}
-                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[11px] font-semibold"
-                    >
-                      Terima & Simpan
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        type="number"
+                        value={t.estimated_hours}
+                        onChange={(e) => handleUpdateAiTaskField(idx, 'estimated_hours', Number(e.target.value))}
+                        className="w-20 p-1.5 border rounded"
+                      />
+                      <button
+                        onClick={() => handleSaveAiTask(t)}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[11px] font-semibold"
+                      >
+                        Terima & Simpan
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
