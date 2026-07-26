@@ -13,8 +13,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  // Tab State: 'projects' | 'clients' | 'tasks'
-  const [activeTab, setActiveTab] = useState<'projects' | 'clients' | 'tasks'>('projects');
+  // Tab State: 'projects' | 'tasks' | 'clients'
+  const [activeTab, setActiveTab] = useState<'projects' | 'tasks' | 'clients'>('projects');
 
   // Client Modal State (Create / Edit)
   const [showClientModal, setShowClientModal] = useState(false);
@@ -98,13 +98,11 @@ export default function DashboardPage() {
           method: 'PUT',
           body: JSON.stringify(clientForm),
         });
-        alert('Klien berhasil diperbarui!');
       } else {
         await apiRequest('/clients', {
           method: 'POST',
           body: JSON.stringify(clientForm),
         });
-        alert('Klien berhasil ditambahkan!');
       }
       setShowClientModal(false);
       fetchDashboardData();
@@ -144,13 +142,11 @@ export default function DashboardPage() {
           method: 'PUT',
           body: JSON.stringify(projectForm),
         });
-        alert('Proyek berhasil diperbarui!');
       } else {
         await apiRequest('/projects', {
           method: 'POST',
           body: JSON.stringify(projectForm),
         });
-        alert('Proyek berhasil dibuat!');
       }
       setShowProjectModal(false);
       fetchDashboardData();
@@ -190,13 +186,11 @@ export default function DashboardPage() {
           method: 'PATCH',
           body: JSON.stringify(taskForm),
         });
-        alert('Task berhasil diperbarui!');
       } else {
         await apiRequest(`/projects/${taskForm.project_id}/tasks`, {
           method: 'POST',
           body: JSON.stringify(taskForm),
         });
-        alert('Task baru berhasil ditambahkan!');
       }
       setShowTaskModal(false);
       fetchDashboardData();
@@ -252,7 +246,6 @@ export default function DashboardPage() {
         }),
       });
       setAiTasks(aiTasks.filter((t) => t.title !== task.title));
-      alert(`Task "${task.title}" berhasil disimpan!`);
       fetchDashboardData();
     } catch (err: any) {
       alert(err.message || 'Gagal menyimpan task.');
@@ -271,94 +264,100 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm font-medium text-[var(--color-ink-muted)]">
-        Memuat Dashboard ProjectPulse...
+      <div className="min-h-screen flex items-center justify-center text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+        Memuat Dashboard...
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[var(--color-paper)]">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-[var(--color-paper-3)] px-6 py-4 flex items-center justify-between">
+      {/* Top Header Bar */}
+      <header className="bg-white border-b border-[var(--color-paper-3)] px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-lg text-[var(--color-ink)] tracking-tight">ProjectPulse</span>
-          <span className="text-xs px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
+          <span className="font-extrabold text-base tracking-tight text-[var(--color-ink)] uppercase">
+            ProjectPulse
+          </span>
+          <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-bold uppercase tracking-wider border border-gray-200">
             Admin Console
           </span>
         </div>
-        <div className="flex items-center gap-4 text-xs font-medium text-[var(--color-ink-muted)]">
+        <div className="flex items-center gap-5 text-xs font-medium text-[var(--color-ink-muted)]">
           <span>{user?.name} ({user?.email})</span>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition"
+            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-[var(--color-ink)] rounded font-semibold text-[11px] transition"
           >
             Logout
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Metric Cards Grid */}
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto p-8 space-y-6">
+        {/* Hallmark Stat-Led Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-[var(--color-paper-3)] shadow-xs">
-            <span className="text-xs font-semibold uppercase text-[var(--color-ink-muted)]">Proyek Aktif</span>
-            <div className="text-2xl font-bold text-[var(--color-ink)] mt-1">{summary?.active_projects || 0}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)]">dari {summary?.total_projects} total proyek</span>
+          <div className="stat-card">
+            <span className="stat-card-title">Proyek Aktif</span>
+            <div className="stat-card-value">{summary?.active_projects || 0}</div>
+            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">
+              dari {summary?.total_projects} total proyek
+            </span>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[var(--color-paper-3)] shadow-xs">
-            <span className="text-xs font-semibold uppercase text-[var(--color-ink-muted)]">Task Overdue</span>
-            <div className="text-2xl font-bold text-red-600 mt-1">{summary?.overdue_tasks || 0}</div>
-            <span className="text-[11px] text-red-500">perlu tindakan segera</span>
+          <div className="stat-card">
+            <span className="stat-card-title text-red-600">Task Overdue</span>
+            <div className="stat-card-value text-red-600">{summary?.overdue_tasks || 0}</div>
+            <span className="text-[11px] text-red-500 block mt-1 font-medium">perlu penanganan segera</span>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[var(--color-paper-3)] shadow-xs">
-            <span className="text-xs font-semibold uppercase text-[var(--color-ink-muted)]">Task Selesai</span>
-            <div className="text-2xl font-bold text-green-600 mt-1">{summary?.completed_tasks || 0}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)]">dari {summary?.total_tasks} total task</span>
+          <div className="stat-card">
+            <span className="stat-card-title text-green-700">Task Selesai</span>
+            <div className="stat-card-value text-green-700">{summary?.completed_tasks || 0}</div>
+            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">
+              dari {summary?.total_tasks} total task
+            </span>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[var(--color-paper-3)] shadow-xs">
-            <span className="text-xs font-semibold uppercase text-[var(--color-ink-muted)]">Klien Terdaftar</span>
-            <div className="text-2xl font-bold text-[var(--color-ink)] mt-1">{clients.length}</div>
-            <span className="text-[11px] text-[var(--color-ink-muted)]">klien aktif</span>
+          <div className="stat-card">
+            <span className="stat-card-title">Klien Terdaftar</span>
+            <div className="stat-card-value">{clients.length}</div>
+            <span className="text-[11px] text-[var(--color-ink-muted)] block mt-1">klien aktif</span>
           </div>
         </div>
 
-        {/* Navigation Tabs & Action Toolbar */}
-        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-[var(--color-paper-3)]">
-          <div className="flex items-center gap-2">
+        {/* Navigation Tabs & Primary Action Toolbar */}
+        <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-[var(--color-paper-3)]">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setActiveTab('projects')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+              className={`px-3.5 py-1.5 text-xs font-bold rounded transition uppercase tracking-wider ${
                 activeTab === 'projects'
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[var(--color-ink)] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Manajemen Proyek ({projects.length})
+              Proyek ({projects.length})
             </button>
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+              className={`px-3.5 py-1.5 text-xs font-bold rounded transition uppercase tracking-wider ${
                 activeTab === 'tasks'
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[var(--color-ink)] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Manajemen Task ({tasks.length})
+              Task ({tasks.length})
             </button>
             <button
               onClick={() => setActiveTab('clients')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+              className={`px-3.5 py-1.5 text-xs font-bold rounded transition uppercase tracking-wider ${
                 activeTab === 'clients'
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[var(--color-ink)] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Manajemen Klien ({clients.length})
+              Klien ({clients.length})
             </button>
           </div>
 
@@ -367,7 +366,7 @@ export default function DashboardPage() {
               <>
                 <button
                   onClick={handleOpenCreateProject}
-                  className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
+                  className="px-3 py-1.5 bg-black text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-gray-800 transition"
                 >
                   + Proyek Baru
                 </button>
@@ -379,9 +378,9 @@ export default function DashboardPage() {
                     }
                     setShowAiModal(true);
                   }}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition"
+                  className="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-blue-800 transition"
                 >
-                  ✨ AI Brief Generator
+                  AI Brief Breakdown
                 </button>
               </>
             )}
@@ -390,15 +389,15 @@ export default function DashboardPage() {
               <>
                 <button
                   onClick={handleOpenCreateTask}
-                  className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
+                  className="px-3 py-1.5 bg-black text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-gray-800 transition"
                 >
                   + Task Baru
                 </button>
                 <button
                   onClick={handleExportCsv}
-                  className="px-3 py-2 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold rounded-lg transition"
+                  className="px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-green-800 transition"
                 >
-                  📊 Ekspor Laporan CSV
+                  Ekspor CSV
                 </button>
               </>
             )}
@@ -406,7 +405,7 @@ export default function DashboardPage() {
             {activeTab === 'clients' && (
               <button
                 onClick={handleOpenCreateClient}
-                className="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition"
+                className="px-3 py-1.5 bg-black text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-gray-800 transition"
               >
                 + Klien Baru
               </button>
@@ -414,12 +413,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Tab 1: Projects Table */}
+        {/* Tab 1: Projects Data Table */}
         {activeTab === 'projects' && (
-          <div className="bg-white border border-[var(--color-paper-3)] rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-[var(--color-paper-3)] rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-semibold uppercase">
+                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-bold uppercase tracking-wider">
                   <th className="p-3.5">Nama Proyek</th>
                   <th className="p-3.5">Klien</th>
                   <th className="p-3.5">Status</th>
@@ -431,10 +430,10 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-[var(--color-paper-2)]">
                 {projects.map((proj) => (
                   <tr key={proj.id} className="hover:bg-[var(--color-paper)] transition">
-                    <td className="p-3.5 font-medium text-[var(--color-ink)]">
+                    <td className="p-3.5 font-semibold text-[var(--color-ink)]">
                       {proj.name}
                       {proj.client_brief && (
-                        <span className="block text-[11px] text-[var(--color-ink-muted)] truncate max-w-xs mt-0.5">
+                        <span className="block text-[11px] font-normal text-[var(--color-ink-muted)] truncate max-w-xs mt-0.5">
                           Brief: {proj.client_brief}
                         </span>
                       )}
@@ -442,7 +441,7 @@ export default function DashboardPage() {
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{proj.client?.name || '-'}</td>
                     <td className="p-3.5">
                       <span
-                        className={`inline-block px-2.5 py-1 text-[10px] font-bold uppercase rounded-md ${
+                        className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase rounded ${
                           proj.status === 'active'
                             ? 'bg-blue-50 text-blue-700 border border-blue-200'
                             : 'bg-gray-100 text-gray-700'
@@ -451,20 +450,20 @@ export default function DashboardPage() {
                         {proj.status}
                       </span>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3.5 font-medium">
                       {proj.completed_tasks_count} / {proj.tasks_count} Task Done
                     </td>
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{proj.deadline}</td>
                     <td className="p-3.5 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditProject(proj)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                        className="text-blue-700 hover:underline font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteProject(proj.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                        className="text-red-600 hover:underline font-semibold"
                       >
                         Hapus
                       </button>
@@ -476,12 +475,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab 2: Tasks Table */}
+        {/* Tab 2: Tasks Data Table */}
         {activeTab === 'tasks' && (
-          <div className="bg-white border border-[var(--color-paper-3)] rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-[var(--color-paper-3)] rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-semibold uppercase">
+                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-bold uppercase tracking-wider">
                   <th className="p-3.5">Judul Task</th>
                   <th className="p-3.5">Proyek</th>
                   <th className="p-3.5">Assignee</th>
@@ -494,10 +493,10 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-[var(--color-paper-2)]">
                 {tasks.map((t) => (
                   <tr key={t.id} className="hover:bg-[var(--color-paper)] transition">
-                    <td className="p-3.5 font-medium text-[var(--color-ink)]">
+                    <td className="p-3.5 font-semibold text-[var(--color-ink)]">
                       {t.title}
                       {t.description && (
-                        <span className="block text-[11px] text-[var(--color-ink-muted)] truncate max-w-xs mt-0.5">
+                        <span className="block text-[11px] font-normal text-[var(--color-ink-muted)] truncate max-w-xs mt-0.5">
                           {t.description}
                         </span>
                       )}
@@ -526,13 +525,13 @@ export default function DashboardPage() {
                     <td className="p-3.5 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditTask(t)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                        className="text-blue-700 hover:underline font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteTask(t.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                        className="text-red-600 hover:underline font-semibold"
                       >
                         Hapus
                       </button>
@@ -544,12 +543,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab 3: Clients Table */}
+        {/* Tab 3: Clients Data Table */}
         {activeTab === 'clients' && (
-          <div className="bg-white border border-[var(--color-paper-3)] rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-[var(--color-paper-3)] rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-semibold uppercase">
+                <tr className="bg-[var(--color-paper-2)] border-b border-[var(--color-paper-3)] text-[var(--color-ink-muted)] font-bold uppercase tracking-wider">
                   <th className="p-3.5">Nama Klien</th>
                   <th className="p-3.5">Perusahaan</th>
                   <th className="p-3.5">Contact Person</th>
@@ -561,7 +560,7 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-[var(--color-paper-2)]">
                 {clients.map((c) => (
                   <tr key={c.id} className="hover:bg-[var(--color-paper)] transition">
-                    <td className="p-3.5 font-medium text-[var(--color-ink)]">{c.name}</td>
+                    <td className="p-3.5 font-semibold text-[var(--color-ink)]">{c.name}</td>
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{c.company}</td>
                     <td className="p-3.5">{c.contact_person}</td>
                     <td className="p-3.5 text-[var(--color-ink-muted)]">{c.email}</td>
@@ -569,13 +568,13 @@ export default function DashboardPage() {
                     <td className="p-3.5 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditClient(c)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                        className="text-blue-700 hover:underline font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteClient(c.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                        className="text-red-600 hover:underline font-semibold"
                       >
                         Hapus
                       </button>
@@ -588,58 +587,58 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Client Modal (Create / Edit) */}
+      {/* Client Modal */}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                {editingClient ? 'Edit Data Klien' : '+ Tambah Klien Baru'}
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+                {editingClient ? 'Edit Data Klien' : 'Tambah Klien Baru'}
               </h3>
-              <button onClick={() => setShowClientModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => setShowClientModal(false)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
             </div>
             <form onSubmit={handleSaveClient} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Nama Klien</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Nama Klien</label>
                 <input
                   type="text"
                   required
                   value={clientForm.name}
                   onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Perusahaan</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Perusahaan</label>
                 <input
                   type="text"
                   required
                   value={clientForm.company}
                   onChange={(e) => setClientForm({ ...clientForm, company: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Contact Person</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Contact Person</label>
                 <input
                   type="text"
                   required
                   value={clientForm.contact_person}
                   onChange={(e) => setClientForm({ ...clientForm, contact_person: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Email</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Email</label>
                 <input
                   type="email"
                   required
                   value={clientForm.email}
                   onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
+              <button type="submit" className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2">
                 {editingClient ? 'Update Klien' : 'Simpan Klien'}
               </button>
             </form>
@@ -647,23 +646,23 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Project Modal (Create / Edit) */}
+      {/* Project Modal */}
       {showProjectModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                {editingProject ? 'Edit Data Proyek' : '+ Buat Proyek Baru'}
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+                {editingProject ? 'Edit Data Proyek' : 'Buat Proyek Baru'}
               </h3>
-              <button onClick={() => setShowProjectModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => setShowProjectModal(false)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
             </div>
             <form onSubmit={handleSaveProject} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Klien Terkait</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Klien Terkait</label>
                 <select
                   value={projectForm.client_id}
                   onChange={(e) => setProjectForm({ ...projectForm, client_id: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 >
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -673,36 +672,36 @@ export default function DashboardPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Nama Proyek</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Nama Proyek</label>
                 <input
                   type="text"
                   required
                   value={projectForm.name}
                   onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Brief Klien (Untuk AI Task)</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Brief Klien</label>
                 <textarea
                   rows={3}
                   value={projectForm.client_brief}
                   onChange={(e) => setProjectForm({ ...projectForm, client_brief: e.target.value })}
-                  placeholder="Deskripsikan keinginan klien..."
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  placeholder="Deskripsikan persyaratan klien..."
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Deadline Proyek</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Deadline</label>
                 <input
                   type="date"
                   required
                   value={projectForm.deadline}
                   onChange={(e) => setProjectForm({ ...projectForm, deadline: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
+              <button type="submit" className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2">
                 {editingProject ? 'Update Proyek' : 'Simpan Proyek'}
               </button>
             </form>
@@ -710,23 +709,23 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Task Modal (Create / Edit) */}
+      {/* Task Modal */}
       {showTaskModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                {editingTask ? 'Edit Task' : '+ Tambah Task Baru'}
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+                {editingTask ? 'Edit Task' : 'Tambah Task Baru'}
               </h3>
-              <button onClick={() => setShowTaskModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => setShowTaskModal(false)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
             </div>
             <form onSubmit={handleSaveTask} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Proyek Target</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Proyek Target</label>
                 <select
                   value={taskForm.project_id}
                   onChange={(e) => setTaskForm({ ...taskForm, project_id: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                   disabled={!!editingTask}
                 >
                   {projects.map((p) => (
@@ -735,11 +734,11 @@ export default function DashboardPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Assignee Member</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Assignee Member</label>
                 <select
                   value={taskForm.assignee_id}
                   onChange={(e) => setTaskForm({ ...taskForm, assignee_id: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 >
                   <option value="">Unassigned</option>
                   {members.map((m) => (
@@ -748,22 +747,22 @@ export default function DashboardPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Judul Task</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Judul Task</label>
                 <input
                   type="text"
                   required
                   value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Kategori & Status</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Kategori & Status</label>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     value={taskForm.category}
                     onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
-                    className="w-full text-xs p-2.5 border rounded-lg"
+                    className="w-full text-xs p-2 border rounded font-semibold"
                   >
                     <option value="backend">Backend</option>
                     <option value="frontend">Frontend</option>
@@ -773,7 +772,7 @@ export default function DashboardPage() {
                   <select
                     value={taskForm.status}
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
-                    className="w-full text-xs p-2.5 border rounded-lg"
+                    className="w-full text-xs p-2 border rounded font-semibold"
                   >
                     <option value="todo">To Do</option>
                     <option value="in_progress">In Progress</option>
@@ -783,17 +782,17 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">Estimasi Jam Kerja</label>
+                <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Estimasi Jam Kerja</label>
                 <input
                   type="number"
                   required
                   min={1}
                   value={taskForm.estimated_hours}
                   onChange={(e) => setTaskForm({ ...taskForm, estimated_hours: Number(e.target.value) })}
-                  className="w-full text-xs p-2.5 border rounded-lg"
+                  className="w-full text-xs p-2 border rounded"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-black text-white text-xs font-semibold rounded-lg mt-2">
+              <button type="submit" className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2">
                 {editingTask ? 'Update Task' : 'Simpan Task'}
               </button>
             </form>
@@ -804,17 +803,19 @@ export default function DashboardPage() {
       {/* AI Task Generator Modal */}
       {showAiModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-[var(--color-paper-3)]">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
             <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">✨ AI Task Breakdown Brief</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+                AI Task Breakdown Brief
+              </h3>
               <button onClick={() => setShowAiModal(false)} className="text-gray-400 hover:text-gray-600 text-sm">
                 ✕
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--color-ink-muted)] uppercase mb-1">
-                Pilih Proyek
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">
+                Pilih Proyek Target
               </label>
               <select
                 value={selectedProjectId || ''}
@@ -824,7 +825,7 @@ export default function DashboardPage() {
                   const p = projects.find((x) => x.id === id);
                   if (p) setBriefInput(p.client_brief || '');
                 }}
-                className="w-full text-xs p-2 border border-[var(--color-paper-3)] rounded-lg mb-3"
+                className="w-full text-xs p-2 border border-[var(--color-paper-3)] rounded mb-3"
               >
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -833,34 +834,36 @@ export default function DashboardPage() {
                 ))}
               </select>
 
-              <label className="block text-xs font-semibold text-[var(--color-ink-muted)] uppercase mb-1">
-                Brief Klien (Teks Bebas)
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">
+                Brief Persyaratan Klien
               </label>
               <textarea
                 rows={4}
                 value={briefInput}
                 onChange={(e) => setBriefInput(e.target.value)}
                 placeholder="Tempelkan brief persyaratan dari klien di sini..."
-                className="w-full text-xs p-2.5 border border-[var(--color-paper-3)] rounded-lg focus:outline-none focus:border-[var(--color-accent)]"
+                className="w-full text-xs p-2.5 border border-[var(--color-paper-3)] rounded focus:outline-none focus:border-[var(--color-accent)]"
               />
             </div>
 
             <button
               onClick={handleGenerateAiTasks}
               disabled={aiLoading || !briefInput}
-              className="w-full py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-semibold rounded-lg transition disabled:opacity-50"
+              className="w-full py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold uppercase tracking-wider rounded transition disabled:opacity-50"
             >
-              {aiLoading ? '🤖 Memproses Brief via LLM API...' : 'Hasilkan Rekomendasi Task'}
+              {aiLoading ? 'Memproses Brief via LLM API...' : 'Jalankan Breakdown Brief'}
             </button>
 
             {/* AI Suggested Tasks Results with Inline Editing */}
             {aiTasks.length > 0 && (
               <div className="space-y-3 mt-4 max-h-60 overflow-y-auto">
-                <span className="text-xs font-bold text-[var(--color-ink)] block">Edit & Sesuaikan Saran AI:</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink)] block">
+                  Edit & Sesuaikan Hasil Rekomendasi:
+                </span>
                 {aiTasks.map((t, idx) => (
                   <div
                     key={idx}
-                    className="p-3 border border-[var(--color-paper-3)] rounded-lg text-xs bg-[var(--color-paper)] space-y-2"
+                    className="p-3 border border-[var(--color-paper-3)] rounded text-xs bg-[var(--color-paper)] space-y-2"
                   >
                     <div className="grid grid-cols-3 gap-2">
                       <input
@@ -872,7 +875,7 @@ export default function DashboardPage() {
                       <select
                         value={t.category}
                         onChange={(e) => handleUpdateAiTaskField(idx, 'category', e.target.value)}
-                        className="p-1.5 border rounded font-bold uppercase"
+                        className="p-1.5 border rounded font-bold uppercase text-[10px]"
                       >
                         <option value="backend">backend</option>
                         <option value="frontend">frontend</option>
@@ -889,9 +892,9 @@ export default function DashboardPage() {
                       />
                       <button
                         onClick={() => handleSaveAiTask(t)}
-                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[11px] font-semibold"
+                        className="px-3 py-1 bg-green-700 hover:bg-green-800 text-white rounded text-[11px] font-bold uppercase tracking-wider"
                       >
-                        Terima & Simpan
+                        Simpan Task
                       </button>
                     </div>
                   </div>
