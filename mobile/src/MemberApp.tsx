@@ -102,6 +102,11 @@ export const MemberApp: React.FC = () => {
     }
   };
 
+  const formatDateStr = (rawDate: string) => {
+    if (!rawDate) return 'Hari ini';
+    return rawDate.split('T')[0];
+  };
+
   const generateInAppNotifications = (taskList: any[]) => {
     const notifs: any[] = [];
 
@@ -111,7 +116,7 @@ export const MemberApp: React.FC = () => {
           id: `new-${t.id}`,
           title: 'Tugas Baru Di-assign',
           message: `Kamu mendapatkan tugas baru: "${t.title}" pada proyek ${t.project?.name || ''}.`,
-          date: t.created_at || 'Hari ini',
+          date: formatDateStr(t.created_at),
           type: 'info',
         });
       }
