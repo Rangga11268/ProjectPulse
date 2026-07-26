@@ -52,31 +52,23 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [sumRes, projRes, clientRes, taskRes] = await Promise.all([
+      const [sumRes, projRes, clientRes, taskRes] = await Promise.allSettled([
         apiRequest('/dashboard/summary'),
         apiRequest('/projects'),
         apiRequest('/clients'),
         apiRequest('/tasks'),
       ]);
-      setSummary(sumRes.data);
-      setProjects(projRes.data);
-      setClients(clientRes.data);
-      setTasks(taskRes.data);
-      setMembers(sumRes.data?.workload_per_member || []);
-      
-      if (clientRes.data.length > 0 && !projectForm.client_id) {
-        setProjectForm((prev) => ({ ...prev, client_id: clientRes.data[0].id }));
-      }
-      if (projRes.data.length > 0 && !taskForm.project_id) {
-        setTaskForm((prev) => ({ ...prev, project_id: projRes.data[0].id }));
+
+      if (sumRes.status === 'fulfilled') setSummary(sumRes.value.data);
+      if (projRes.status === 'fulfilled') setProjects(projRes.value.data);
+      if (clientRes.status === 'fulfilled') setClients(clientRes.value.data);
+      if (taskRes.status === 'fulfilled') setTasks(taskRes.value.data);
+
+      if (sumRes.status === 'fulfilled' && sumRes.value.data?.workload_per_member) {
+        setMembers(sumRes.value.data.workload_per_member);
       }
     } catch (err: any) {
-      if (err.message && err.message.toLowerCase().includes('unauthenticated')) {
-        localStorage.clear();
-        router.push('/login');
-      } else {
-        console.error(err);
-      }
+      console.error(err);
     } finally {
       setLoading(false);
     }
