@@ -20,12 +20,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin Dashboard Summary
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
-    // Clients Management
-    Route::apiResource('clients', ClientController::class);
+    // Admin Role Restricted Endpoints
+    Route::middleware([\App\Http\Middleware\EnsureAdminRole::class])->group(function () {
+        Route::apiResource('clients', ClientController::class)->except(['index', 'show']);
+        Route::apiResource('projects', ProjectController::class)->except(['index', 'show']);
+        Route::post('/projects/{project}/tasks/generate', [DashboardController::class, 'generateAiTasks']);
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+    });
 
-    // Projects Management
-    Route::apiResource('projects', ProjectController::class);
-    Route::post('/projects/{project}/tasks/generate', [DashboardController::class, 'generateAiTasks']);
+    // Read & General Endpoints
+    Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
+    Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
 
     // Tasks Management & Time Log Export
     Route::get('/tasks/export/csv', [TaskController::class, 'exportTimeLogsCsv']);
