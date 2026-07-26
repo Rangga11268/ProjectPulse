@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8000/api';
 
 export async function mobileApiRequest(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('mobile_token');
