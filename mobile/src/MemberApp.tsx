@@ -106,9 +106,26 @@ export const MemberApp: React.FC = () => {
     }
   };
 
-  const formatDateStr = (rawDate: string) => {
-    if (!rawDate) return 'Hari ini';
-    return rawDate.split('T')[0];
+  const timeAgo = (rawDate: string) => {
+    if (!rawDate) return 'Baru saja';
+    const diff = Date.now() - new Date(rawDate).getTime();
+    const absDiff = Math.abs(diff);
+    const mins = Math.floor(absDiff / 60000);
+    if (mins < 1) return 'Baru saja';
+    if (diff < 0) {
+      if (mins < 60) return `${mins} menit lagi`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours} jam lagi`;
+      const days = Math.floor(hours / 24);
+      return `${days} hari lagi`;
+    }
+    if (mins < 60) return `${mins} menit lalu`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} jam lalu`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} hari lalu`;
+    const months = Math.floor(days / 30);
+    return `${months} bulan lalu`;
   };
 
   const generateInAppNotifications = (taskList: any[]) => {
@@ -120,7 +137,7 @@ export const MemberApp: React.FC = () => {
           id: `new-${t.id}`,
           title: 'Tugas Baru Di-assign',
           message: `Kamu mendapatkan tugas baru: "${t.title}" pada proyek ${t.project?.name || ''}.`,
-          date: formatDateStr(t.created_at),
+          date: timeAgo(t.created_at),
           type: 'info',
         });
       }
@@ -130,7 +147,7 @@ export const MemberApp: React.FC = () => {
           id: `deadline-${t.id}`,
           title: 'Pengingat Deadline Tugas',
           message: `Tugas "${t.title}" jatuh tempo pada ${t.deadline}. Segera perbarui progres!`,
-          date: t.deadline,
+          date: timeAgo(t.deadline),
           type: 'warning',
         });
       }

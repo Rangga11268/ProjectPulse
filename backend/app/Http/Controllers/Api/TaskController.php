@@ -51,6 +51,13 @@ class TaskController extends Controller
             'deadline' => 'nullable|date',
         ]);
 
+        if ($project->tasks()->where('title', $validated['title'])->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Task dengan judul yang sama sudah ada di proyek ini.',
+            ], 409);
+        }
+
         $task = $project->tasks()->create($validated);
         $task->load(['assignee', 'project.client']);
 

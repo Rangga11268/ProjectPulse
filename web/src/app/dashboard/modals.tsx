@@ -1,0 +1,275 @@
+'use client';
+
+import { FormEvent } from 'react';
+
+export function ClientModal({
+  show, onClose, form, setForm, editing, onSave, loading,
+}: {
+  show: boolean; onClose: () => void; form: any; setForm: (f: any) => void;
+  editing: any; onSave: (e: FormEvent) => Promise<void>; loading: boolean;
+}) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
+        <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+            {editing ? 'Edit Data Klien' : 'Tambah Klien Baru'}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        </div>
+        <form onSubmit={onSave} className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Nama Klien</label>
+            <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Perusahaan</label>
+            <input type="text" required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Contact Person</label>
+            <input type="text" required value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Email</label>
+            <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2 disabled:opacity-50">
+            {loading ? 'Menyimpan...' : editing ? 'Update Klien' : 'Simpan Klien'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function ProjectModal({
+  show, onClose, form, setForm, editing, onSave, loading, clients,
+}: {
+  show: boolean; onClose: () => void; form: any; setForm: (f: any) => void;
+  editing: any; onSave: (e: FormEvent) => Promise<void>; loading: boolean; clients: any[];
+}) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
+        <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+            {editing ? 'Edit Data Proyek' : 'Buat Proyek Baru'}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        </div>
+        <form onSubmit={onSave} className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Klien Terkait</label>
+            <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className="w-full text-xs p-2 border rounded">
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.company})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Nama Proyek</label>
+            <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Brief Klien</label>
+            <textarea rows={3} value={form.client_brief} onChange={(e) => setForm({ ...form, client_brief: e.target.value })} placeholder="Deskripsikan persyaratan klien..." className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Deadline</label>
+            <input type="date" required value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2 disabled:opacity-50">
+            {loading ? 'Menyimpan...' : editing ? 'Update Proyek' : 'Simpan Proyek'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function TaskModal({
+  show, onClose, form, setForm, editing, onSave, loading, projects, members,
+}: {
+  show: boolean; onClose: () => void; form: any; setForm: (f: any) => void;
+  editing: any; onSave: (e: FormEvent) => Promise<void>; loading: boolean;
+  projects: any[]; members: any[];
+}) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
+        <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
+            {editing ? 'Edit Task' : 'Tambah Task Baru'}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        </div>
+        <form onSubmit={onSave} className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Proyek Target</label>
+            <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} className="w-full text-xs p-2 border rounded" disabled={!!editing}>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Assignee Member</label>
+            <select value={form.assignee_id} onChange={(e) => setForm({ ...form, assignee_id: e.target.value })} className="w-full text-xs p-2 border rounded">
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Judul Task</label>
+            <input type="text" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Kategori & Status</label>
+            <div className="grid grid-cols-2 gap-2">
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
+                <option value="backend">Backend</option>
+                <option value="frontend">Frontend</option>
+                    <option value="design">Design</option>
+                <option value="QA">QA</option>
+              </select>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Estimasi Jam Kerja</label>
+            <input type="number" required min={1} value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: Number(e.target.value) })} className="w-full text-xs p-2 border rounded" />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2 disabled:opacity-50">
+            {loading ? 'Menyimpan...' : editing ? 'Update Task' : 'Simpan Task'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function AiTaskModal({
+  show, onClose, projects, selectedProjectId, setSelectedProjectId,
+  briefInput, setBriefInput, onGenerate, aiLoading, aiTasks,
+  onUpdateField, onSaveTask, savingAi, members,
+}: {
+  show: boolean; onClose: () => void; projects: any[];
+  selectedProjectId: number | null; setSelectedProjectId: (id: number | null) => void;
+  briefInput: string; setBriefInput: (v: string) => void;
+  onGenerate: () => Promise<void>; aiLoading: boolean;
+  aiTasks: any[]; onUpdateField: (idx: number, field: string, val: any) => void;
+  onSaveTask: (idx: number) => Promise<void>; savingAi: number | null; members: any[];
+}) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
+        <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">AI Task Breakdown Brief</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Pilih Proyek Target</label>
+          <select
+            value={selectedProjectId || ''}
+            onChange={(e) => {
+              const id = Number(e.target.value);
+              setSelectedProjectId(id);
+              const p = projects.find((x) => x.id === id);
+              if (p) setBriefInput(p.client_brief || '');
+            }}
+            className="w-full text-xs p-2 border border-[var(--color-paper-3)] rounded mb-3"
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Brief Persyaratan Klien</label>
+          <textarea
+            rows={4} value={briefInput}
+            onChange={(e) => setBriefInput(e.target.value)}
+            placeholder="Tempelkan brief persyaratan dari klien di sini..."
+            className="w-full text-xs p-2.5 border border-[var(--color-paper-3)] rounded focus:outline-none focus:border-[var(--color-accent)]"
+          />
+        </div>
+        <button
+          onClick={onGenerate}
+          disabled={aiLoading || !briefInput}
+          className="w-full py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold uppercase tracking-wider rounded transition disabled:opacity-50"
+        >
+          {aiLoading ? 'Memproses Brief via LLM API...' : 'Jalankan Breakdown Brief'}
+        </button>
+        {aiTasks.length > 0 && (
+          <div className="space-y-3 mt-4 max-h-60 overflow-y-auto">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink)] block">Edit & Sesuaikan Hasil Rekomendasi:</span>
+            {aiTasks.map((t, idx) => (
+              <div key={idx} className="p-3 border border-[var(--color-paper-3)] rounded text-xs bg-[var(--color-paper)] space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <input type="text" value={t.title} onChange={(e) => onUpdateField(idx, 'title', e.target.value)} className="col-span-2 p-1.5 border rounded font-semibold text-[var(--color-ink)]" />
+                  <select value={t.category} onChange={(e) => onUpdateField(idx, 'category', e.target.value)} className="p-1.5 border rounded font-bold uppercase text-[10px]">
+                    <option value="backend">backend</option>
+                    <option value="frontend">frontend</option>
+                    <option value="design">design</option>
+                    <option value="QA">QA</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <select value={t.assignee_id || ''} onChange={(e) => onUpdateField(idx, 'assignee_id', Number(e.target.value) || null)} className="p-1.5 border rounded font-semibold flex-1">
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <input type="number" value={t.estimated_hours} onChange={(e) => onUpdateField(idx, 'estimated_hours', Number(e.target.value))} className="w-20 p-1.5 border rounded" />
+                  <button
+                    onClick={() => onSaveTask(idx)}
+                    disabled={savingAi !== null}
+                    className={`px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wider transition ${savingAi === idx ? 'bg-green-400 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 text-white'}`}
+                  >
+                    {savingAi === idx ? 'Menyimpan...' : 'Simpan Task'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  dialog, onClose,
+}: {
+  dialog: { message: string; onConfirm: () => void } | null;
+  onClose: () => void;
+}) {
+  if (!dialog) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-[9999]">
+      <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl border border-[var(--color-paper-3)] text-center space-y-5">
+        <div className="w-12 h-12 mx-auto bg-rose-100 text-rose-600 rounded-full flex items-center justify-center">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-sm font-semibold text-[var(--color-ink)]">{dialog.message}</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={onClose} className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-[var(--color-paper-3)] text-[var(--color-ink-muted)] hover:bg-[var(--color-paper)] transition">Batal</button>
+          <button onClick={dialog.onConfirm} className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition">Ya, Hapus</button>
+        </div>
+      </div>
+    </div>
+  );
+}
