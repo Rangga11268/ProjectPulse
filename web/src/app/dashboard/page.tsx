@@ -616,16 +616,16 @@ export default function DashboardPage() {
 
         {/* Tab 1: Projects Data Table */}
         {activeTab === 'projects' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[640px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
-                  <th className="py-3.5 px-4">Nama Proyek</th>
-                  <th className="py-3.5 px-4">Klien</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Progres Task</th>
-                  <th className="py-3.5 px-4">Deadline</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4 min-w-[200px]">Nama Proyek</th>
+                  <th className="py-3.5 px-4 min-w-[120px]">Klien</th>
+                  <th className="py-3.5 px-4 min-w-[100px]">Status</th>
+                  <th className="py-3.5 px-4 min-w-[110px]">Progres Task</th>
+                  <th className="py-3.5 px-4 min-w-[100px]">Deadline</th>
+                  <th className="py-3.5 px-4 text-right min-w-[80px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -693,17 +693,17 @@ export default function DashboardPage() {
 
         {/* Tab 2: Tasks Data Table */}
         {activeTab === 'tasks' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
-                  <th className="py-3.5 px-4">Judul Task</th>
-                  <th className="py-3.5 px-4">Proyek</th>
-                  <th className="py-3.5 px-4">Assignee</th>
-                  <th className="py-3.5 px-4">Kategori</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Estimasi</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4 min-w-[180px]">Judul Task</th>
+                  <th className="py-3.5 px-4 min-w-[140px]">Proyek</th>
+                  <th className="py-3.5 px-4 min-w-[120px]">Assignee</th>
+                  <th className="py-3.5 px-4 min-w-[100px]">Kategori</th>
+                  <th className="py-3.5 px-4 min-w-[110px]">Status</th>
+                  <th className="py-3.5 px-4 min-w-[90px]">Estimasi</th>
+                  <th className="py-3.5 px-4 text-right min-w-[80px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -787,16 +787,16 @@ export default function DashboardPage() {
 
         {/* Tab 3: Clients Data Table */}
         {activeTab === 'clients' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[600px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
-                  <th className="py-3.5 px-4">Nama Klien</th>
-                  <th className="py-3.5 px-4">Perusahaan</th>
-                  <th className="py-3.5 px-4">Contact Person</th>
-                  <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Total Proyek</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4 min-w-[140px]">Nama Klien</th>
+                  <th className="py-3.5 px-4 min-w-[120px]">Perusahaan</th>
+                  <th className="py-3.5 px-4 min-w-[130px]">Contact Person</th>
+                  <th className="py-3.5 px-4 min-w-[140px]">Email</th>
+                  <th className="py-3.5 px-4 min-w-[100px]">Total Proyek</th>
+                  <th className="py-3.5 px-4 text-right min-w-[80px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">

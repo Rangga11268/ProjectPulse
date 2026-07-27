@@ -74,3 +74,23 @@ body {
   margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Hallmark Custom Sleek Thin Scrollbar */
+::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
