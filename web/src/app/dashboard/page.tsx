@@ -614,10 +614,10 @@ export default function DashboardPage() {
               </div>
             </div>
 
-        {/* Tab 1: Projects Data Table (Responsive Overflow Wrapper) */}
+        {/* Tab 1: Projects Data Table */}
         {activeTab === 'projects' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
-            <table className="w-full text-left border-collapse text-xs min-w-[700px]">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
                   <th className="py-3.5 px-4">Nama Proyek</th>
@@ -693,8 +693,8 @@ export default function DashboardPage() {
 
         {/* Tab 2: Tasks Data Table */}
         {activeTab === 'tasks' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
-            <table className="w-full text-left border-collapse text-xs min-w-[750px]">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
                   <th className="py-3.5 px-4">Judul Task</th>
@@ -787,8 +787,8 @@ export default function DashboardPage() {
 
         {/* Tab 3: Clients Data Table */}
         {activeTab === 'clients' && (
-          <div className="bg-white border border-slate-200/80 rounded-xl overflow-x-auto shadow-xs">
-            <table className="w-full text-left border-collapse text-xs min-w-[650px]">
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
                   <th className="py-3.5 px-4">Nama Klien</th>
@@ -901,7 +901,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                    {m.assigned_tasks_count || m.tasks_count || 0} Task
+                    {m.active_tasks_count !== undefined
+                      ? m.active_tasks_count
+                      : tasks.filter((t: any) => t.assignee_id === m.id || t.assignee?.id === m.id).length}{' '}
+                    Task
                   </span>
                 </div>
               ))
