@@ -515,114 +515,104 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Navigation Tabs, Search Bar & Primary Action Toolbar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                activeTab === 'projects'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Proyek ({filteredProjects.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('tasks')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                activeTab === 'tasks'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Task ({filteredTasks.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('clients')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                activeTab === 'clients'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Klien ({filteredClients.length})
-            </button>
-          </div>
-
-          {/* Live Instant Search Bar */}
-          <div className="relative flex-1 max-w-md mx-0 md:mx-3">
-            <input
-              type="text"
-              placeholder={`Cari nama ${activeTab === 'projects' ? 'proyek' : activeTab === 'tasks' ? 'task / assignee' : 'klien'}...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white transition"
-            />
-            <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
-            {activeTab === 'projects' && (
-              <>
+        {/* Option A: Master-Detail Split View (Main Data Table 68% + Live Activity Sidebar 32%) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Master Workspace (Col Span 8) */}
+          <div className="lg:col-span-8 space-y-4">
+            {/* Navigation Tabs, Search Bar & Primary Action Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 <button
-                  onClick={handleOpenCreateProject}
-                  className="flex-1 sm:flex-none px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                  onClick={() => setActiveTab('projects')}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                    activeTab === 'projects'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                 >
-                  + Proyek Baru
+                  Proyek ({filteredProjects.length})
                 </button>
                 <button
-                  onClick={() => {
-                    if (projects.length > 0) {
-                      setSelectedProjectId(projects[0].id);
-                      setBriefInput(projects[0].client_brief || '');
-                    }
-                    setShowAiModal(true);
-                  }}
-                  className="flex-1 sm:flex-none px-3.5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-indigo-700 transition shadow-xs whitespace-nowrap"
+                  onClick={() => setActiveTab('tasks')}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                    activeTab === 'tasks'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                 >
-                  AI Brief Breakdown
-                </button>
-              </>
-            )}
-
-            {activeTab === 'tasks' && (
-              <>
-                <button
-                  onClick={handleOpenCreateTask}
-                  className="flex-1 sm:flex-none px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
-                >
-                  + Task Baru
+                  Task ({filteredTasks.length})
                 </button>
                 <button
-                  onClick={handleExportCsv}
-                  className="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-emerald-700 transition shadow-xs whitespace-nowrap"
+                  onClick={() => setActiveTab('clients')}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                    activeTab === 'clients'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                 >
-                  Ekspor CSV
+                  Klien ({filteredClients.length})
                 </button>
-              </>
-            )}
+              </div>
 
-            {activeTab === 'clients' && (
-              <button
-                onClick={handleOpenCreateClient}
-                className="w-full sm:w-auto px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
-              >
-                + Klien Baru
-              </button>
-            )}
-          </div>
-        </div>
+              {/* Live Instant Search Bar */}
+              <div className="relative flex-1 max-w-xs mx-0 sm:mx-2">
+                <input
+                  type="text"
+                  placeholder={`Cari ${activeTab}...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-4 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white transition"
+                />
+                <svg className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {activeTab === 'projects' && (
+                  <button
+                    onClick={handleOpenCreateProject}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                  >
+                    + Proyek
+                  </button>
+                )}
+
+                {activeTab === 'tasks' && (
+                  <>
+                    <button
+                      onClick={handleOpenCreateTask}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                    >
+                      + Task
+                    </button>
+                    <button
+                      onClick={handleExportCsv}
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-emerald-700 transition shadow-xs whitespace-nowrap"
+                    >
+                      CSV
+                    </button>
+                  </>
+                )}
+
+                {activeTab === 'clients' && (
+                  <button
+                    onClick={handleOpenCreateClient}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                  >
+                    + Klien
+                  </button>
+                )}
+              </div>
+            </div>
 
         {/* Tab 1: Projects Data Table (Responsive Overflow Wrapper) */}
         {activeTab === 'projects' && (
@@ -846,7 +836,81 @@ export default function DashboardPage() {
             </table>
           </div>
         )}
-      </main>
+      </div>
+
+      {/* Live Detail Sidebar (Col Span 4) */}
+      <div className="lg:col-span-4 space-y-5">
+        {/* AI Brief Breakdown Quick Shortcut Card */}
+        <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-5 rounded-2xl text-white shadow-md border border-slate-800 relative overflow-hidden">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-900/60 px-2 py-0.5 rounded border border-indigo-700/50">
+                AI Powered Feature
+              </span>
+              <h3 className="text-sm font-extrabold mt-2 tracking-tight">AI Brief Breakdown</h3>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Uraikan brief klien menjadi daftar task otomatis menggunakan Gemini AI.
+              </p>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (projects.length > 0) {
+                setSelectedProjectId(projects[0].id);
+                setBriefInput(projects[0].client_brief || '');
+              }
+              setShowAiModal(true);
+            }}
+            className="w-full mt-4 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition uppercase tracking-wider shadow-xs flex items-center justify-center gap-2"
+          >
+            <span>Mulai AI Breakdown</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Team Workload & Activity Feed Panel */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Beban Kerja Tim ({members.length})</span>
+            </h3>
+            <span className="text-[10px] font-bold text-slate-600 uppercase">Aktif</span>
+          </div>
+
+          <div className="space-y-3">
+            {members.length === 0 ? (
+              <p className="text-xs text-slate-600 text-center py-2">Belum ada data anggota tim.</p>
+            ) : (
+              members.map((m: any) => (
+                <div key={m.id || m.name} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-extrabold flex items-center justify-center uppercase shadow-xs">
+                      {m.name ? m.name.charAt(0) : '?'}
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-slate-900">{m.name}</span>
+                      <span className="block text-[10px] text-slate-600 font-medium">{m.email || 'Member Team'}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                    {m.assigned_tasks_count || m.tasks_count || 0} Task
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
       <ClientModal show={showClientModal} onClose={() => setShowClientModal(false)} form={clientForm} setForm={setClientForm} editing={editingClient} onSave={handleSaveClient} loading={clientLoading} />
 
