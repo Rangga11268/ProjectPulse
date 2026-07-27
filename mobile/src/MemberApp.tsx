@@ -51,6 +51,17 @@ export const MemberApp: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   
   const [toastMessage, setToastMessage] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState<number | null>(null);
+  const [logLoading, setLogLoading] = useState(false);
+
+  const categoryLabels: Record<string, string> = {
+    backend: 'Backend',
+    frontend: 'Frontend',
+    design: 'Design',
+    qa: 'QA',
+    general: 'General',
+  };
 
   // Check persistent login on mount
   useEffect(() => {
@@ -58,14 +69,21 @@ export const MemberApp: React.FC = () => {
     const savedUser = localStorage.getItem('mobile_user');
     if (savedToken && savedUser) {
       setToken(savedToken);
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      fetchTasks(parsedUser.id);
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        fetchTasks(parsedUser.id);
+      } catch {
+        localStorage.removeItem('mobile_user');
+        localStorage.removeItem('mobile_token');
+      }
     }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginLoading) return;
+    setLoginLoading(true);
     try {
       const data = await mobileApiRequest('/auth/login', {
         method: 'POST',
@@ -80,6 +98,8 @@ export const MemberApp: React.FC = () => {
       }
     } catch (err: any) {
       setToastMessage(err.message || 'Login gagal.');
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -157,6 +177,8 @@ export const MemberApp: React.FC = () => {
   };
 
   const handleUpdateStatus = async (taskId: number, newStatus: string) => {
+    if (statusLoading !== null) return;
+    setStatusLoading(taskId);
     try {
       await mobileApiRequest(`/tasks/${taskId}/status`, {
         method: 'PATCH',
@@ -169,17 +191,20 @@ export const MemberApp: React.FC = () => {
       }
     } catch (err: any) {
       setToastMessage(err.message || 'Gagal memperbarui status task.');
+    } finally {
+      setStatusLoading(null);
     }
   };
 
   const handleAddTimeLog = async () => {
-    if (!selectedTask || !hoursInput || !noteInput) return;
+    if (!selectedTask || !hoursInput || logLoading) return;
+    setLogLoading(true);
     try {
       await mobileApiRequest(`/tasks/${selectedTask.id}/time-logs`, {
         method: 'POST',
         body: JSON.stringify({
           hours: parseFloat(hoursInput),
-          note: noteInput,
+          note: noteInput || '',
         }),
       });
       setToastMessage('Log waktu kerja berhasil dicatat!');
@@ -188,6 +213,8 @@ export const MemberApp: React.FC = () => {
       fetchTasks(user.id);
     } catch (err: any) {
       setToastMessage(err.message || 'Gagal menambah log waktu.');
+    } finally {
+      setLogLoading(false);
     }
   };
 
@@ -258,8 +285,8 @@ export const MemberApp: React.FC = () => {
                     required
                   />
                 </IonItem>
-                <IonButton expand="block" type="submit" className="ion-margin-top">
-                  Masuk ke App
+                <IonButton expand="block" type="submit" className="ion-margin-top" disabled={loginLoading}>
+                  {loginLoading ? 'Memuat...' : 'Masuk ke App'}
                 </IonButton>
               </form>
             </IonCardContent>
@@ -328,7 +355,7 @@ export const MemberApp: React.FC = () => {
                   <IonCardHeader>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <IonBadge color={t.category === 'backend' ? 'tertiary' : 'secondary'}>
-                        {t.category}
+                        {categoryLabels[t.category] || t.category}
                       </IonBadge>
                       <IonBadge color={t.status === 'in_progress' ? 'warning' : 'medium'}>
                         {formatStatusLabel(t.status)}
@@ -426,7 +453,7 @@ export const MemberApp: React.FC = () => {
                 <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bae6fd' }}>
-                      {selectedTask.category}
+                      {categoryLabels[selectedTask.category] || selectedTask.category}
                     </span>
                     <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
                       {formatStatusLabel(selectedTask.status)}
@@ -464,9 +491,10 @@ export const MemberApp: React.FC = () => {
                         size="small"
                         color={selectedTask.status === st ? 'secondary' : 'light'}
                         onClick={() => handleUpdateStatus(selectedTask.id, st)}
+                        disabled={statusLoading === selectedTask.id}
                         style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.7rem' }}
                       >
-                        {formatStatusLabel(st)}
+                        {statusLoading === selectedTask.id ? '...' : formatStatusLabel(st)}
                       </IonButton>
                     ))}
                   </div>
@@ -542,9 +570,9 @@ export const MemberApp: React.FC = () => {
                 placeholder="Tuliskan pekerjaan yang diselesaikan..."
               />
             </IonItem>
-            <IonButton expand="block" onClick={handleAddTimeLog}>
-              Simpan Log Waktu
-            </IonButton>
+                <IonButton expand="block" onClick={handleAddTimeLog} disabled={logLoading}>
+                  {logLoading ? 'Menyimpan...' : 'Simpan Log Waktu'}
+                </IonButton>
           </IonContent>
         </IonModal>
 

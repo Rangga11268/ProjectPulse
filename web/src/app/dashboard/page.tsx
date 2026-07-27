@@ -43,6 +43,7 @@ export default function DashboardPage() {
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [clientLoading, setClientLoading] = useState(false);
   const [projectLoading, setProjectLoading] = useState(false);
   const [taskLoading, setTaskLoading] = useState(false);
@@ -53,7 +54,8 @@ export default function DashboardPage() {
 
   const showNotification = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
   };
 
   const filteredProjects = projects.filter((p) =>
@@ -350,7 +352,7 @@ export default function DashboardPage() {
       });
       setAiTasks(prev => prev.filter((_, i) => i !== idx));
       showNotification('✓ Task berhasil dibuat dari rekomendasi AI!');
-      fetchDashboardData();
+      await fetchDashboardData();
     } catch (err: any) {
       showNotification('❌ ' + (err.message || 'Gagal menyimpan task.'));
     } finally {
@@ -375,8 +377,9 @@ export default function DashboardPage() {
   };
 
   const handleExportCsv = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
     const token = localStorage.getItem('token');
-    window.open(`http://localhost:8000/api/tasks/export/csv?token=${token}`, '_blank');
+    window.open(`${baseUrl}/tasks/export/csv?token=${token}`, '_blank');
   };
 
   const handleLogout = () => {
@@ -662,12 +665,12 @@ export default function DashboardPage() {
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-800 tabular-nums">
-                          {proj.completed_tasks_count} / {proj.tasks_count}
+                          {proj.completed_tasks_count ?? 0} / {proj.tasks_count ?? 0}
                         </span>
                         <span className="text-[10px] text-slate-600 font-normal">Selesai</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 font-semibold text-slate-600 tabular-nums">{proj.deadline}</td>
+                    <td className="py-4 px-4 font-semibold text-slate-600 tabular-nums">{proj.deadline ?? '-'}</td>
                     <td className="py-4 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
