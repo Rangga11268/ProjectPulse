@@ -16,7 +16,12 @@ export const metadata: Metadata = {
   title: "ProjectPulse Admin — Client & Internal Project Management",
   description: "Platform Manajemen Klien & Proyek Internal Bilcode Technology",
   icons: {
-    icon: "/billcodeLogo.webp",
+    icon: [
+      { url: "/billcodeLogo.webp", type: "image/webp" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: ["/billcodeLogo.webp"],
+    apple: ["/billcodeLogo.webp"],
   },
 };
 

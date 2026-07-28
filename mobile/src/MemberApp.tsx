@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   IonContent,
   IonHeader,
@@ -50,10 +50,37 @@ export const MemberApp: React.FC = () => {
   // Notifications State
   const [notifications, setNotifications] = useState<any[]>([]);
   
+  // Pagination State (Performance optimization for large datasets)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
+
   const [toastMessage, setToastMessage] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [logLoading, setLogLoading] = useState(false);
+
+  // Performance Optimization: useMemo for memoized task filtering & pagination
+  const activeTasks = useMemo(() => {
+    return tasks.filter((t) => t.status !== 'done');
+  }, [tasks]);
+
+  const completedTasks = useMemo(() => {
+    return tasks.filter((t) => t.status === 'done');
+  }, [tasks]);
+
+  const filteredActiveTasks = useMemo(() => {
+    if (statusFilter === 'all') return activeTasks;
+    return activeTasks.filter((t) => t.status === statusFilter);
+  }, [activeTasks, statusFilter]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredActiveTasks.length / itemsPerPage) || 1;
+  }, [filteredActiveTasks.length, itemsPerPage]);
+
+  const paginatedTasks = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredActiveTasks.slice(start, start + itemsPerPage);
+  }, [filteredActiveTasks, currentPage, itemsPerPage]);
 
   const categoryLabels: Record<string, string> = {
     backend: 'Backend',
@@ -198,16 +225,33 @@ export const MemberApp: React.FC = () => {
 
   const handleAddTimeLog = async () => {
     if (!selectedTask || !hoursInput || logLoading) return;
+    const parsedHours = parseFloat(hoursInput);
+    if (isNaN(parsedHours) || parsedHours <= 0) {
+      setToastMessage('Durasi jam kerja harus berupa angka positif.');
+      return;
+    }
+    if (!noteInput.trim()) {
+      setToastMessage('Catatan progres pekerjaan tidak boleh kosong.');
+      return;
+    }
+
     setLogLoading(true);
     try {
-      await mobileApiRequest(`/tasks/${selectedTask.id}/time-logs`, {
+      const res = await mobileApiRequest(`/tasks/${selectedTask.id}/time-logs`, {
         method: 'POST',
         body: JSON.stringify({
-          hours: parseFloat(hoursInput),
-          note: noteInput || '',
+          hours: parsedHours,
+          note: noteInput.trim(),
         }),
       });
-      setToastMessage('Log waktu kerja berhasil dicatat!');
+
+      const newLog = res.data;
+      const updatedLogs = [newLog, ...(selectedTask.time_logs || [])];
+
+      // Instant optimistic state update on selectedTask so modal updates immediately without manual reload
+      setSelectedTask((prev: any) => (prev ? { ...prev, time_logs: updatedLogs } : null));
+
+      setToastMessage('✓ Log waktu kerja berhasil dicatat!');
       setShowLogModal(false);
       setNoteInput('');
       fetchTasks(user.id);
@@ -240,8 +284,6 @@ export const MemberApp: React.FC = () => {
     }
   };
 
-  const activeTasks = tasks.filter((t) => t.status !== 'done' && (statusFilter === 'all' || t.status === statusFilter));
-  const completedTasks = tasks.filter((t) => t.status === 'done');
 
   if (!token) {
     return (
@@ -314,33 +356,114 @@ export const MemberApp: React.FC = () => {
             Logout
           </IonButton>
         </IonToolbar>
-        <IonToolbar>
-          <IonSegment
-            value={activeSegment}
-            onIonChange={(e) => setActiveSegment(e.detail.value as any)}
-          >
-            <IonSegmentButton value="tasks">
-              <IonLabel>Aktif ({activeTasks.length})</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="history">
-              <IonLabel>Riwayat Selesai ({completedTasks.length})</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="notifications">
-              <IonLabel>Notifikasi</IonLabel>
-            </IonSegmentButton>
-          </IonSegment>
-        </IonToolbar>
-      </IonHeader>
+          <IonToolbar style={{ '--background': '#0f172a', '--border-color': '#1e293b', padding: '6px 8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+              <button
+                onClick={() => setActiveSegment('tasks')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.72rem',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
+                  background: activeSegment === 'tasks' ? '#ffffff' : '#1e293b',
+                  color: activeSegment === 'tasks' ? '#0f172a' : '#94a3b8',
+                  border: activeSegment === 'tasks' ? '1px solid #ffffff' : '1px solid #334155',
+                  transition: 'all 0.15s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                Aktif ({activeTasks.length})
+              </button>
 
-      <IonContent className="ion-padding">
+              <button
+                onClick={() => setActiveSegment('history')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.72rem',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
+                  background: activeSegment === 'history' ? '#ffffff' : '#1e293b',
+                  color: activeSegment === 'history' ? '#0f172a' : '#94a3b8',
+                  border: activeSegment === 'history' ? '1px solid #ffffff' : '1px solid #334155',
+                  transition: 'all 0.15s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                Riwayat Selesai ({completedTasks.length})
+              </button>
+
+              <button
+                onClick={() => setActiveSegment('notifications')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.72rem',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
+                  background: activeSegment === 'notifications' ? '#ffffff' : '#1e293b',
+                  color: activeSegment === 'notifications' ? '#0f172a' : '#94a3b8',
+                  border: activeSegment === 'notifications' ? '1px solid #ffffff' : '1px solid #334155',
+                  transition: 'all 0.15s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                Notifikasi ({notifications.length})
+              </button>
+            </div>
+          </IonToolbar>
+        </IonHeader>
+
+        <IonContent className="ion-padding" style={{ '--background': '#f8fafc' }}>
+          {/* Anti-Slop Member Profile Header */}
+          <div style={{ background: '#0f172a', borderRadius: '14px', padding: '16px', color: '#ffffff', marginBottom: '16px', border: '1px solid #1e293b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', fontSize: '1rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', flexShrink: 0 }}>
+                  {user?.name ? user.name.charAt(0) : 'M'}
+                </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.01em' }}>
+                  {user?.name || 'Member Workspace'}
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>
+                  {user?.email || 'dev@bilcode.com'}
+                </p>
+              </div>
+            </div>
+            <span style={{ fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', background: '#1e293b', color: '#cbd5e1', padding: '3px 8px', borderRadius: '4px', border: '1px solid #334155' }}>
+              {user?.role || 'Member'}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #1e293b' }}>
+            <div>
+              <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Tugas Aktif</span>
+              <span style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ffffff' }}>{activeTasks.length} Task</span>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Task Selesai</span>
+              <span style={{ fontSize: '0.95rem', fontWeight: '800', color: '#10b981' }}>{completedTasks.length} Selesai</span>
+            </div>
+          </div>
+        </div>
+
         {/* Active Tasks Tab */}
         {activeSegment === 'tasks' && (
           <>
-            <IonItem className="ion-margin-bottom">
-              <IonLabel>Filter Status</IonLabel>
+            <IonItem style={{ '--background': '#ffffff', '--border-radius': '10px', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
+              <IonLabel style={{ fontSize: '0.78rem', fontWeight: '700', color: '#475569' }}>Filter Status:</IonLabel>
               <IonSelect
                 value={statusFilter}
                 onIonChange={(e) => setStatusFilter(e.detail.value)}
+                style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0f172a' }}
               >
                 <IonSelectOption value="all">Semua Task Aktif</IonSelectOption>
                 <IonSelectOption value="todo">To Do</IonSelectOption>
@@ -349,32 +472,112 @@ export const MemberApp: React.FC = () => {
               </IonSelect>
             </IonItem>
 
-            <IonList>
-              {activeTasks.map((t) => (
-                <IonCard key={t.id} button onClick={() => setSelectedTask(t)}>
-                  <IonCardHeader>
+            <IonList style={{ background: 'transparent', padding: 0 }}>
+              {paginatedTasks.length === 0 ? (
+                <div style={{ padding: '24px 16px', textAlign: 'center', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '800', color: '#0f172a' }}>Tidak Ada Task Aktif</h4>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>Semua pekerjaan kamu saat ini telah diselesaikan dengan baik.</p>
+                </div>
+              ) : (
+                paginatedTasks.map((t) => (
+                  <div
+                    key={t.id}
+                    onClick={() => setSelectedTask(t)}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      marginBottom: '10px',
+                      border: '1px solid #e2e8f0',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <IonBadge color={t.category === 'backend' ? 'tertiary' : 'secondary'}>
+                      <span style={{
+                        fontSize: '0.62rem',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1'
+                      }}>
                         {categoryLabels[t.category] || t.category}
-                      </IonBadge>
-                      <IonBadge color={t.status === 'in_progress' ? 'warning' : 'medium'}>
+                      </span>
+
+                      <span style={{
+                        fontSize: '0.62rem',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        background: t.status === 'in_progress' ? '#fef3c7' : t.status === 'review' ? '#f3e8ff' : '#f1f5f9',
+                        color: t.status === 'in_progress' ? '#b45309' : t.status === 'review' ? '#6b21a8' : '#334155',
+                        border: '1px solid #cbd5e1'
+                      }}>
                         {formatStatusLabel(t.status)}
-                      </IonBadge>
+                      </span>
                     </div>
-                    <IonCardTitle style={{ fontSize: '1rem', marginTop: '8px' }}>
+
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f172a', margin: '8px 0 3px 0', lineHeight: 1.3 }}>
                       {t.title}
-                    </IonCardTitle>
-                    <IonCardSubtitle>Proyek: {t.project?.name || '-'}</IonCardSubtitle>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <p>{t.description}</p>
-                    <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#666' }}>
-                      Estimasi: {t.estimated_hours} jam | Deadline: {t.deadline || '-'}
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: '#475569', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      Proyek: <strong style={{ color: '#0f172a' }}>{t.project?.name || '-'}</strong> — {t.description}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', fontSize: '0.7rem', color: '#64748b' }}>
+                      <span>Estimasi: <strong style={{ color: '#0f172a' }}>{t.estimated_hours} Jam</strong></span>
+                      <span style={{ color: t.deadline || t.project?.deadline ? '#be123c' : '#64748b', fontWeight: '700' }}>
+                        Deadline: {t.deadline || t.project?.deadline ? `${t.deadline || t.project?.deadline} (${timeAgo(t.deadline || t.project?.deadline)})` : 'Tidak ditetapkan'}
+                      </span>
                     </div>
-                  </IonCardContent>
-                </IonCard>
-              ))}
+                  </div>
+                ))
+              )}
             </IonList>
+
+            {/* Utilitarian Anti-Slop Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', padding: '10px 14px', background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: '800',
+                    background: currentPage === 1 ? '#f1f5f9' : '#0f172a',
+                    color: currentPage === 1 ? '#94a3b8' : '#ffffff',
+                    border: 'none',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  ← Sebelunmnya
+                </button>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#475569' }}>
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: '800',
+                    background: currentPage === totalPages ? '#f1f5f9' : '#0f172a',
+                    color: currentPage === totalPages ? '#94a3b8' : '#ffffff',
+                    border: 'none',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -437,82 +640,109 @@ export const MemberApp: React.FC = () => {
           </IonList>
         )}
 
-        {/* Task Detail Modal */}
+        {/* Task Detail Modal - Anti-Slop Hallmark Redesign */}
         <IonModal isOpen={!!selectedTask} onDidDismiss={() => setSelectedTask(null)}>
           {selectedTask && (
             <>
               <IonHeader>
-                <IonToolbar color="dark">
-                  <IonTitle style={{ fontSize: '0.9rem' }}>Detail Task #{selectedTask.id}</IonTitle>
-                  <IonButton slot="end" fill="clear" color="light" size="small" onClick={() => setSelectedTask(null)}>
+                <IonToolbar style={{ '--background': '#0f172a', '--color': '#ffffff' }}>
+                  <IonTitle style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Detail Task #{selectedTask.id}
+                  </IonTitle>
+                  <IonButton slot="end" fill="clear" color="light" size="small" onClick={() => setSelectedTask(null)} style={{ fontWeight: '700' }}>
                     Tutup
                   </IonButton>
                 </IonToolbar>
               </IonHeader>
-              <IonContent className="ion-padding" style={{ '--background': '#fafafa' }}>
-                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bae6fd' }}>
+              <IonContent className="ion-padding" style={{ '--background': '#f8fafc' }}>
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bae6fd' }}>
                       {categoryLabels[selectedTask.category] || selectedTask.category}
                     </span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                       {formatStatusLabel(selectedTask.status)}
                     </span>
                   </div>
 
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a', margin: '4px 0 8px 0', lineHeight: 1.3 }}>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f172a', margin: '4px 0 8px 0', lineHeight: 1.3 }}>
                     {selectedTask.title}
                   </h2>
-                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
+                  <p style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
                     {selectedTask.description || 'Tidak ada deskripsi rincian.'}
                   </p>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Proyek</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#0f172a' }}>{selectedTask.project?.name || '-'}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Proyek</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#0f172a' }}>{selectedTask.project?.name || '-'}</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Deadline</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#e11d48' }}>{selectedTask.deadline || '-'}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>Deadline</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: selectedTask.deadline || selectedTask.project?.deadline ? '#be123c' : '#64748b' }}>
+                        {selectedTask.deadline || selectedTask.project?.deadline
+                          ? `${selectedTask.deadline || selectedTask.project?.deadline} (${timeAgo(selectedTask.deadline || selectedTask.project?.deadline)})`
+                          : 'Tidak ditetapkan'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Status Update Control */}
-                <div style={{ marginTop: '16px', background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <IonLabel style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: '#475569', display: 'block', marginBottom: '10px' }}>
-                    Update Status Pekerjaan:
+                <div style={{ marginTop: '14px', background: '#ffffff', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <IonLabel style={{ fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', color: '#475569', display: 'block', marginBottom: '10px', letterSpacing: '0.04em' }}>
+                    Pilih Status Pekerjaan:
                   </IonLabel>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     {['todo', 'in_progress', 'review', 'done'].map((st) => (
-                      <IonButton
+                      <button
                         key={st}
-                        size="small"
-                        color={selectedTask.status === st ? 'secondary' : 'light'}
                         onClick={() => handleUpdateStatus(selectedTask.id, st)}
                         disabled={statusLoading === selectedTask.id}
-                        style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.7rem' }}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.7rem',
+                          fontWeight: '800',
+                          textTransform: 'uppercase',
+                          background: selectedTask.status === st ? '#0f172a' : '#f8fafc',
+                          color: selectedTask.status === st ? '#ffffff' : '#334155',
+                          border: selectedTask.status === st ? '1px solid #0f172a' : '1px solid #cbd5e1',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
                       >
                         {statusLoading === selectedTask.id ? '...' : formatStatusLabel(st)}
-                      </IonButton>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                <IonButton
-                  expand="block"
-                  color="tertiary"
+                <button
                   onClick={() => setShowLogModal(true)}
-                  style={{ marginTop: '16px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  style={{
+                    width: '100%',
+                    marginTop: '14px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                  }}
                 >
                   + Catat Log Jam Kerja
-                </IonButton>
+                </button>
 
                 {/* Log History */}
-                <div style={{ marginTop: '20px' }}>
+                <div style={{ marginTop: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', margin: 0 }}>
+                    <h3 style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' }}>
                       Riwayat Log Waktu:
                     </h3>
                     <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#2563eb' }}>
@@ -521,20 +751,20 @@ export const MemberApp: React.FC = () => {
                   </div>
 
                   {selectedTask.time_logs?.length === 0 ? (
-                    <div style={{ padding: '16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+                    <div style={{ padding: '14px', background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
                       Belum ada log waktu kerja yang dicatat.
                     </div>
                   ) : (
-                    <IonList style={{ background: 'transparent', padding: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {selectedTask.time_logs?.map((log: any) => (
-                        <IonItem key={log.id} style={{ '--background': '#ffffff', borderRadius: '8px', marginBottom: '6px', border: '1px solid #e2e8f0' }}>
-                          <IonLabel>
-                            <h2 style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a' }}>{log.hours} Jam Kerja</h2>
-                            <p style={{ fontSize: '0.75rem', color: '#475569' }}>{log.note || 'Tanpa catatan'}</p>
-                          </IonLabel>
-                        </IonItem>
+                        <div key={log.id} style={{ background: '#ffffff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <h4 style={{ fontSize: '0.8rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>{log.hours} Jam Kerja</h4>
+                            <p style={{ fontSize: '0.72rem', color: '#475569', margin: '2px 0 0 0' }}>{log.note || 'Tanpa catatan'}</p>
+                          </div>
+                        </div>
                       ))}
-                    </IonList>
+                    </div>
                   )}
                 </div>
               </IonContent>
@@ -576,12 +806,62 @@ export const MemberApp: React.FC = () => {
           </IonContent>
         </IonModal>
 
-        <IonToast
-          isOpen={!!toastMessage}
-          message={toastMessage}
-          duration={3000}
-          onDidDismiss={() => setToastMessage('')}
-        />
+        {/* Custom High-Contrast Floating Toast Banner */}
+        {toastMessage && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 99999,
+            width: '90%',
+            maxWidth: '380px',
+            background: '#0f172a',
+            color: '#ffffff',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            border: '1px solid #334155',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            animation: 'fadeInDown 0.2s ease-out',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: '#10b981',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                flexShrink: 0,
+              }}>✓</span>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '700', color: '#f8fafc', lineHeight: 1.3 }}>
+                {toastMessage}
+              </p>
+            </div>
+            <button
+              onClick={() => setToastMessage('')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '1rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                padding: '0 4px',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </IonContent>
     </IonPage>
   );

@@ -42,20 +42,55 @@ export default function DashboardPage() {
   const savingAiRef = useRef<number | null>(null);
 
   // Toast Notification State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [clientLoading, setClientLoading] = useState(false);
   const [projectLoading, setProjectLoading] = useState(false);
   const [taskLoading, setTaskLoading] = useState(false);
 
-  // Live Search Filter State
+  // Live Search Filter & Pagination State (Performance optimization for large datasets)
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
-  const showNotification = (msg: string) => {
-    setToastMessage(msg);
+  // Bulk Selection State
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<number>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<number>>(new Set());
+
+  const [projectPage, setProjectPage] = useState(1);
+  const [taskPage, setTaskPage] = useState(1);
+  const [clientPage, setClientPage] = useState(1);
+  const itemsPerPage = 6;
+
+  const showNotification = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message: msg, type });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  };
+
+  const toggleSelect = (setter: React.Dispatch<React.SetStateAction<Set<number>>>, id: number) =>
+    setter(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const toggleSelectAll = (setter: React.Dispatch<React.SetStateAction<Set<number>>>, ids: number[]) =>
+    setter(prev => prev.size === ids.length ? new Set() : new Set(ids));
+
+  const handleBulkDelete = (ids: number[], entity: string, apiPath: string, clearSelection: () => void) => {
+    if (ids.length === 0) return;
+    setConfirmDialog({
+      message: `Apakah Anda yakin ingin menghapus ${ids.length} ${entity} sekaligus?`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await Promise.all(ids.map(id => apiRequest(`${apiPath}/${id}`, { method: 'DELETE' })));
+          showNotification(`✓ ${ids.length} ${entity} berhasil dihapus!`);
+          clearSelection();
+          fetchDashboardData();
+        } catch (err: any) {
+          showNotification('❌ ' + (err.message || 'Gagal menghapus data.'), 'error');
+          fetchDashboardData();
+        }
+      },
+    });
   };
 
   const filteredProjects = projects.filter((p) =>
@@ -63,17 +98,26 @@ export default function DashboardPage() {
     (p.client?.name && p.client.name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const paginatedProjects = filteredProjects.slice((projectPage - 1) * itemsPerPage, projectPage * itemsPerPage);
+  const totalProjectPages = Math.ceil(filteredProjects.length / itemsPerPage) || 1;
+
   const filteredTasks = tasks.filter((t) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (t.project?.name && t.project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (t.assignee?.name && t.assignee.name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const paginatedTasks = filteredTasks.slice((taskPage - 1) * itemsPerPage, taskPage * itemsPerPage);
+  const totalTaskPages = Math.ceil(filteredTasks.length / itemsPerPage) || 1;
+
   const filteredClients = clients.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (c.company && c.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const paginatedClients = filteredClients.slice((clientPage - 1) * itemsPerPage, clientPage * itemsPerPage);
+  const totalClientPages = Math.ceil(filteredClients.length / itemsPerPage) || 1;
 
   const router = useRouter();
 
@@ -140,8 +184,8 @@ export default function DashboardPage() {
         });
       }
       showNotification('✓ Klien berhasil disimpan!');
-      await fetchDashboardData();
       setShowClientModal(false);
+      fetchDashboardData();
     } catch (err: any) {
       showNotification('❌ ' + (err.message || 'Gagal menyimpan klien.'));
     } finally {
@@ -159,10 +203,10 @@ export default function DashboardPage() {
         try {
           await apiRequest(`/clients/${id}`, { method: 'DELETE' });
           showNotification('✓ Klien berhasil dihapus!');
-          await fetchDashboardData();
+          fetchDashboardData();
         } catch (err: any) {
-          showNotification('❌ ' + (err.message || 'Gagal menghapus klien.'));
-          await fetchDashboardData();
+          showNotification('❌ ' + (err.message || 'Gagal menghapus klien.'), 'error');
+          fetchDashboardData();
         } finally {
           setClientLoading(false);
         }
@@ -199,8 +243,8 @@ export default function DashboardPage() {
         });
       }
       showNotification('✓ Proyek berhasil disimpan!');
-      await fetchDashboardData();
       setShowProjectModal(false);
+      fetchDashboardData();
     } catch (err: any) {
       showNotification('❌ ' + (err.message || 'Gagal menyimpan proyek.'));
     } finally {
@@ -218,10 +262,10 @@ export default function DashboardPage() {
         try {
           await apiRequest(`/projects/${id}`, { method: 'DELETE' });
           showNotification('✓ Proyek berhasil dihapus!');
-          await fetchDashboardData();
+          fetchDashboardData();
         } catch (err: any) {
-          showNotification('❌ ' + (err.message || 'Gagal menghapus proyek.'));
-          await fetchDashboardData();
+          showNotification('❌ ' + (err.message || 'Gagal menghapus proyek.'), 'error');
+          fetchDashboardData();
         } finally {
           setProjectLoading(false);
         }
@@ -259,8 +303,8 @@ export default function DashboardPage() {
         });
         showNotification('✓ Task baru berhasil dibuat!');
       }
-      await fetchDashboardData();
       setShowTaskModal(false);
+      fetchDashboardData();
     } catch (err: any) {
       showNotification('❌ ' + (err.message || 'Gagal menyimpan task.'));
     } finally {
@@ -279,10 +323,10 @@ export default function DashboardPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       showNotification('✓ Status task berhasil diubah!');
-      await fetchDashboardData();
+      fetchDashboardData();
     } catch (err: any) {
-      showNotification('❌ Gagal mengubah status task.');
-      await fetchDashboardData();
+      showNotification('❌ Gagal mengubah status task.', 'error');
+      fetchDashboardData();
     } finally {
       setTaskLoading(false);
     }
@@ -298,10 +342,10 @@ export default function DashboardPage() {
         try {
           await apiRequest(`/tasks/${id}`, { method: 'DELETE' });
           showNotification('✓ Task berhasil dihapus!');
-          await fetchDashboardData();
+          fetchDashboardData();
         } catch (err: any) {
-          showNotification('❌ ' + (err.message || 'Gagal menghapus task.'));
-          await fetchDashboardData();
+          showNotification('❌ ' + (err.message || 'Gagal menghapus task.'), 'error');
+          fetchDashboardData();
         } finally {
           setTaskLoading(false);
         }
@@ -352,9 +396,9 @@ export default function DashboardPage() {
       });
       setAiTasks(prev => prev.filter((_, i) => i !== idx));
       showNotification('✓ Task berhasil dibuat dari rekomendasi AI!');
-      await fetchDashboardData();
+      fetchDashboardData();
     } catch (err: any) {
-      showNotification('❌ ' + (err.message || 'Gagal menyimpan task.'));
+      showNotification('❌ ' + (err.message || 'Gagal menyimpan task.'), 'error');
     } finally {
       savingAiRef.current = null;
       setSavingAi(null);
@@ -397,13 +441,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-paper)]">
-      {/* High Visibility Toast Alert Banner */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-2xl border-2 border-emerald-500 transition-all duration-300 transform scale-105">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* Top Header Bar - Royal Slate Navy (#0f172a) Responsive Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
@@ -578,12 +615,25 @@ export default function DashboardPage() {
 
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                 {activeTab === 'projects' && (
-                  <button
-                    onClick={handleOpenCreateProject}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
-                  >
-                    + Proyek
-                  </button>
+                  <>
+                    <button
+                      onClick={handleOpenCreateProject}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                    >
+                      + Proyek
+                    </button>
+                    {selectedProjectIds.size > 0 && (
+                      <button
+                        onClick={() => handleBulkDelete(
+                          [...selectedProjectIds], 'proyek', '/projects',
+                          () => setSelectedProjectIds(new Set())
+                        )}
+                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        Hapus ({selectedProjectIds.size})
+                      </button>
+                    )}
+                  </>
                 )}
 
                 {activeTab === 'tasks' && (
@@ -594,6 +644,17 @@ export default function DashboardPage() {
                     >
                       + Task
                     </button>
+                    {selectedTaskIds.size > 0 && (
+                      <button
+                        onClick={() => handleBulkDelete(
+                          [...selectedTaskIds], 'task', '/tasks',
+                          () => setSelectedTaskIds(new Set())
+                        )}
+                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        Hapus ({selectedTaskIds.size})
+                      </button>
+                    )}
                     <button
                       onClick={handleExportCsv}
                       className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-emerald-700 transition shadow-xs whitespace-nowrap"
@@ -604,12 +665,25 @@ export default function DashboardPage() {
                 )}
 
                 {activeTab === 'clients' && (
-                  <button
-                    onClick={handleOpenCreateClient}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
-                  >
-                    + Klien
-                  </button>
+                  <>
+                    <button
+                      onClick={handleOpenCreateClient}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                    >
+                      + Klien
+                    </button>
+                    {selectedClientIds.size > 0 && (
+                      <button
+                        onClick={() => handleBulkDelete(
+                          [...selectedClientIds], 'klien', '/clients',
+                          () => setSelectedClientIds(new Set())
+                        )}
+                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        Hapus ({selectedClientIds.size})
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -620,6 +694,14 @@ export default function DashboardPage() {
             <table className="w-full text-left border-collapse text-xs min-w-[640px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
+                  <th className="py-3.5 px-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedProjectIds.size === paginatedProjects.length && paginatedProjects.length > 0}
+                      onChange={() => toggleSelectAll(setSelectedProjectIds, paginatedProjects.map(p => p.id))}
+                      className="accent-white w-3.5 h-3.5 rounded cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-4 min-w-[200px]">Nama Proyek</th>
                   <th className="py-3.5 px-4 min-w-[120px]">Klien</th>
                   <th className="py-3.5 px-4 min-w-[100px]">Status</th>
@@ -629,8 +711,16 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredProjects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                {paginatedProjects.map((proj) => (
+                  <tr key={proj.id} className={`hover:bg-slate-50/80 transition-colors duration-150 ${selectedProjectIds.has(proj.id) ? 'bg-blue-50/60' : ''}`}>
+                    <td className="py-4 px-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedProjectIds.has(proj.id)}
+                        onChange={() => toggleSelect(setSelectedProjectIds, proj.id)}
+                        className="accent-blue-600 w-3.5 h-3.5 rounded cursor-pointer"
+                      />
+                    </td>
                     <td className="py-4 px-4">
                       <div className="font-bold text-slate-900 text-[13px]">{proj.name}</div>
                       {proj.client_brief && (
@@ -688,6 +778,29 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {totalProjectPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-200/80 text-xs">
+                <button
+                  onClick={() => setProjectPage((p) => Math.max(1, p - 1))}
+                  disabled={projectPage === 1}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  ← Sebelumnya
+                </button>
+                <span className="font-semibold text-slate-600">
+                  Halaman <strong className="text-slate-900">{projectPage}</strong> dari {totalProjectPages}
+                </span>
+                <button
+                  onClick={() => setProjectPage((p) => Math.min(totalProjectPages, p + 1))}
+                  disabled={projectPage === totalProjectPages}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -697,6 +810,14 @@ export default function DashboardPage() {
             <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
+                  <th className="py-3.5 px-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedTaskIds.size === paginatedTasks.length && paginatedTasks.length > 0}
+                      onChange={() => toggleSelectAll(setSelectedTaskIds, paginatedTasks.map(t => t.id))}
+                      className="accent-white w-3.5 h-3.5 rounded cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-4 min-w-[180px]">Judul Task</th>
                   <th className="py-3.5 px-4 min-w-[140px]">Proyek</th>
                   <th className="py-3.5 px-4 min-w-[120px]">Assignee</th>
@@ -707,8 +828,16 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredTasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                {paginatedTasks.map((t) => (
+                  <tr key={t.id} className={`hover:bg-slate-50/80 transition-colors duration-150 ${selectedTaskIds.has(t.id) ? 'bg-blue-50/60' : ''}`}>
+                    <td className="py-4 px-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedTaskIds.has(t.id)}
+                        onChange={() => toggleSelect(setSelectedTaskIds, t.id)}
+                        className="accent-blue-600 w-3.5 h-3.5 rounded cursor-pointer"
+                      />
+                    </td>
                     <td className="py-4 px-4">
                       <div className="font-bold text-slate-900 text-[13px]">{t.title}</div>
                       {t.description && (
@@ -782,6 +911,29 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {totalTaskPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-200/80 text-xs">
+                <button
+                  onClick={() => setTaskPage((p) => Math.max(1, p - 1))}
+                  disabled={taskPage === 1}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  ← Sebelumnya
+                </button>
+                <span className="font-semibold text-slate-600">
+                  Halaman <strong className="text-slate-900">{taskPage}</strong> dari {totalTaskPages}
+                </span>
+                <button
+                  onClick={() => setTaskPage((p) => Math.min(totalTaskPages, p + 1))}
+                  disabled={taskPage === totalTaskPages}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -791,6 +943,14 @@ export default function DashboardPage() {
             <table className="w-full text-left border-collapse text-xs min-w-[600px]">
               <thead>
                 <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10.5px]">
+                  <th className="py-3.5 px-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedClientIds.size === paginatedClients.length && paginatedClients.length > 0}
+                      onChange={() => toggleSelectAll(setSelectedClientIds, paginatedClients.map(c => c.id))}
+                      className="accent-white w-3.5 h-3.5 rounded cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-4 min-w-[140px]">Nama Klien</th>
                   <th className="py-3.5 px-4 min-w-[120px]">Perusahaan</th>
                   <th className="py-3.5 px-4 min-w-[130px]">Contact Person</th>
@@ -800,8 +960,16 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredClients.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                {paginatedClients.map((c) => (
+                  <tr key={c.id} className={`hover:bg-slate-50/80 transition-colors duration-150 ${selectedClientIds.has(c.id) ? 'bg-blue-50/60' : ''}`}>
+                    <td className="py-4 px-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedClientIds.has(c.id)}
+                        onChange={() => toggleSelect(setSelectedClientIds, c.id)}
+                        className="accent-blue-600 w-3.5 h-3.5 rounded cursor-pointer"
+                      />
+                    </td>
                     <td className="py-4 px-4 font-bold text-slate-900 text-[13px]">{c.name}</td>
                     <td className="py-4 px-4 font-semibold text-slate-700">{c.company}</td>
                     <td className="py-4 px-4 text-slate-800">{c.contact_person}</td>
@@ -834,6 +1002,29 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {totalClientPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-200/80 text-xs">
+                <button
+                  onClick={() => setClientPage((p) => Math.max(1, p - 1))}
+                  disabled={clientPage === 1}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  ← Sebelumnya
+                </button>
+                <span className="font-semibold text-slate-600">
+                  Halaman <strong className="text-slate-900">{clientPage}</strong> dari {totalClientPages}
+                </span>
+                <button
+                  onClick={() => setClientPage((p) => Math.min(totalClientPages, p + 1))}
+                  disabled={clientPage === totalClientPages}
+                  className="px-3 py-1 bg-white border border-slate-200 rounded-md font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -939,6 +1130,39 @@ export default function DashboardPage() {
       />
 
       <ConfirmDialog dialog={confirmDialog} onClose={() => setConfirmDialog(null)} />
+
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-right-2 fade-in duration-300 max-w-sm ${
+          toast.type === 'success'
+            ? 'bg-emerald-900/95 text-emerald-50 border border-emerald-700/50 backdrop-blur-sm'
+            : 'bg-red-900/95 text-red-50 border border-red-700/50 backdrop-blur-sm'
+        }`}>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+            toast.type === 'success' ? 'bg-emerald-700' : 'bg-red-700'
+          }`}>
+            {toast.type === 'success' ? (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold leading-snug">{toast.message}</p>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="text-white/50 hover:text-white transition-colors shrink-0 mt-1"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
