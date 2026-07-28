@@ -66,6 +66,13 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        if ($client->projects()->count() > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak bisa menghapus klien yang masih memiliki proyek. Hapus semua proyek terkait terlebih dahulu.',
+            ], 409);
+        }
+
         $client->delete();
 
         return response()->json([

@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const savingAiRef = useRef<number | null>(null);
 
   // Toast Notification State
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [clientLoading, setClientLoading] = useState(false);
   const [projectLoading, setProjectLoading] = useState(false);
@@ -62,7 +62,7 @@ export default function DashboardPage() {
   const [clientPage, setClientPage] = useState(1);
   const itemsPerPage = 6;
 
-  const showNotification = (msg: string, type: 'success' | 'error' = 'success') => {
+  const showNotification = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message: msg, type });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 4000);
@@ -1132,31 +1132,33 @@ export default function DashboardPage() {
       <ConfirmDialog dialog={confirmDialog} onClose={() => setConfirmDialog(null)} />
 
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-right-2 fade-in duration-300 max-w-sm ${
-          toast.type === 'success'
-            ? 'bg-emerald-900/95 text-emerald-50 border border-emerald-700/50 backdrop-blur-sm'
-            : 'bg-red-900/95 text-red-50 border border-red-700/50 backdrop-blur-sm'
-        }`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-            toast.type === 'success' ? 'bg-emerald-700' : 'bg-red-700'
+        <div
+          className="fixed top-5 right-5 z-50 flex items-start gap-3 bg-white px-4 py-3 rounded-lg shadow-lg border border-slate-200 animate-in slide-in-from-right-2 fade-in duration-300 max-w-sm"
+          style={{
+            borderLeftWidth: '4px',
+            borderLeftColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6',
+          }}
+        >
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+            toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+            toast.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
           }`}>
             {toast.type === 'success' ? (
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : toast.type === 'error' ? (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold leading-snug">{toast.message}</p>
-          </div>
-          <button
-            onClick={() => setToast(null)}
-            className="text-white/50 hover:text-white transition-colors shrink-0 mt-1"
-          >
+          <p className="flex-1 text-xs font-semibold text-slate-800 leading-snug pt-0.5">{toast.message}</p>
+          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-600 transition-colors shrink-0 mt-0.5">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>

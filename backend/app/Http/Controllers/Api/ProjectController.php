@@ -76,6 +76,13 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
+        if ($project->tasks()->count() > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak bisa menghapus proyek yang masih memiliki task. Hapus semua task terkait terlebih dahulu.',
+            ], 409);
+        }
+
         $project->delete();
 
         return response()->json([

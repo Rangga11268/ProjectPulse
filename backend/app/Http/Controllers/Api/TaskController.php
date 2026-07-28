@@ -174,6 +174,13 @@ class TaskController extends Controller
 
     public function destroy(Task $task)
     {
+        if ($task->timeLogs()->count() > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak bisa menghapus task yang sudah memiliki log waktu. Hapus log waktu terlebih dahulu.',
+            ], 409);
+        }
+
         $task->delete();
 
         return response()->json([
