@@ -48,8 +48,11 @@ export default function DashboardPage() {
   const [projectLoading, setProjectLoading] = useState(false);
   const [taskLoading, setTaskLoading] = useState(false);
 
-  // Live Search Filter & Pagination State (Performance optimization for large datasets)
+  // Live Search Filter, Status, Category & Client Filter State
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [clientFilter, setClientFilter] = useState('all');
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   // Bulk Selection State
@@ -93,28 +96,38 @@ export default function DashboardPage() {
     });
   };
 
-  const filteredProjects = projects.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.client?.name && p.client.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.client?.name && p.client.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const paginatedProjects = filteredProjects.slice((projectPage - 1) * itemsPerPage, projectPage * itemsPerPage);
   const totalProjectPages = Math.ceil(filteredProjects.length / itemsPerPage) || 1;
 
-  const filteredTasks = tasks.filter((t) =>
-    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.project?.name && t.project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (t.assignee?.name && t.assignee.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredTasks = tasks.filter((t) => {
+    const matchesSearch =
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.project?.name && t.project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.assignee?.name && t.assignee.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
 
   const paginatedTasks = filteredTasks.slice((taskPage - 1) * itemsPerPage, taskPage * itemsPerPage);
   const totalTaskPages = Math.ceil(filteredTasks.length / itemsPerPage) || 1;
 
-  const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.company && c.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredClients = clients.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.company && c.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCompany = clientFilter === 'all' || (c.company && c.company.toLowerCase() === clientFilter.toLowerCase());
+    return matchesSearch && matchesCompany;
+  });
 
   const paginatedClients = filteredClients.slice((clientPage - 1) * itemsPerPage, clientPage * itemsPerPage);
   const totalClientPages = Math.ceil(filteredClients.length / itemsPerPage) || 1;
@@ -556,135 +569,196 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Master Workspace (Col Span 8) */}
           <div className="lg:col-span-8 space-y-4">
-            {/* Navigation Tabs, Search Bar & Primary Action Toolbar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                <button
-                  onClick={() => setActiveTab('projects')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                    activeTab === 'projects'
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Proyek ({filteredProjects.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('tasks')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                    activeTab === 'tasks'
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Task ({filteredTasks.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('clients')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
-                    activeTab === 'clients'
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Klien ({filteredClients.length})
-                </button>
-              </div>
-
-              {/* Live Instant Search Bar */}
-              <div className="relative flex-1 max-w-xs mx-0 sm:mx-2">
-                <input
-                  type="text"
-                  placeholder={`Cari ${activeTab}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-4 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white transition"
-                />
-                <svg className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                {searchQuery && (
+            {/* Primary Action Toolbar: Navigation Tabs & Actions */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    onClick={() => setActiveTab('projects')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                      activeTab === 'projects'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
                   >
-                    ✕
+                    Proyek ({filteredProjects.length})
                   </button>
-                )}
+                  <button
+                    onClick={() => setActiveTab('tasks')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                      activeTab === 'tasks'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Task ({filteredTasks.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('clients')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-lg transition uppercase tracking-wider whitespace-nowrap ${
+                      activeTab === 'clients'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Klien ({filteredClients.length})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  {activeTab === 'projects' && (
+                    <>
+                      <button
+                        onClick={handleOpenCreateProject}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        + Proyek
+                      </button>
+                      {selectedProjectIds.size > 0 && (
+                        <button
+                          onClick={() => handleBulkDelete(
+                            [...selectedProjectIds], 'proyek', '/projects',
+                            () => setSelectedProjectIds(new Set())
+                          )}
+                          className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                        >
+                          Hapus ({selectedProjectIds.size})
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {activeTab === 'tasks' && (
+                    <>
+                      <button
+                        onClick={handleOpenCreateTask}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        + Task
+                      </button>
+                      <button
+                        onClick={handleExportCsv}
+                        className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-emerald-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        CSV
+                      </button>
+                      {selectedTaskIds.size > 0 && (
+                        <button
+                          onClick={() => handleBulkDelete(
+                            [...selectedTaskIds], 'task', '/tasks',
+                            () => setSelectedTaskIds(new Set())
+                          )}
+                          className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                        >
+                          Hapus ({selectedTaskIds.size})
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {activeTab === 'clients' && (
+                    <>
+                      <button
+                        onClick={handleOpenCreateClient}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                      >
+                        + Klien
+                      </button>
+                      {selectedClientIds.size > 0 && (
+                        <button
+                          onClick={() => handleBulkDelete(
+                            [...selectedClientIds], 'klien', '/clients',
+                            () => setSelectedClientIds(new Set())
+                          )}
+                          className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
+                        >
+                          Hapus ({selectedClientIds.size})
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                {activeTab === 'projects' && (
-                  <>
+              {/* Dedicated Search & Filter Sub-Bar */}
+              <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder={`Cari nama ${activeTab === 'projects' ? 'proyek / klien' : activeTab === 'tasks' ? 'task / assignee' : 'klien / perusahaan'}...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-8 py-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white transition"
+                  />
+                  <svg className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  {searchQuery && (
                     <button
-                      onClick={handleOpenCreateProject}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
                     >
-                      + Proyek
+                      ✕
                     </button>
-                    {selectedProjectIds.size > 0 && (
-                      <button
-                        onClick={() => handleBulkDelete(
-                          [...selectedProjectIds], 'proyek', '/projects',
-                          () => setSelectedProjectIds(new Set())
-                        )}
-                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
-                      >
-                        Hapus ({selectedProjectIds.size})
-                      </button>
-                    )}
-                  </>
-                )}
+                  )}
+                </div>
 
-                {activeTab === 'tasks' && (
-                  <>
-                    <button
-                      onClick={handleOpenCreateTask}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                <div className="flex items-center gap-2">
+                  {/* Status Dropdown Filter */}
+                  {(activeTab === 'projects' || activeTab === 'tasks') && (
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="py-2 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer min-w-[120px]"
                     >
-                      + Task
-                    </button>
-                    {selectedTaskIds.size > 0 && (
-                      <button
-                        onClick={() => handleBulkDelete(
-                          [...selectedTaskIds], 'task', '/tasks',
-                          () => setSelectedTaskIds(new Set())
-                        )}
-                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
-                      >
-                        Hapus ({selectedTaskIds.size})
-                      </button>
-                    )}
-                    <button
-                      onClick={handleExportCsv}
-                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-emerald-700 transition shadow-xs whitespace-nowrap"
-                    >
-                      CSV
-                    </button>
-                  </>
-                )}
+                      <option value="all">Semua Status</option>
+                      {activeTab === 'projects' ? (
+                        <>
+                          <option value="planning">Planning</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="todo">To-Do</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="review">Review</option>
+                          <option value="done">Done</option>
+                        </>
+                      )}
+                    </select>
+                  )}
 
-                {activeTab === 'clients' && (
-                  <>
-                    <button
-                      onClick={handleOpenCreateClient}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-blue-700 transition shadow-xs whitespace-nowrap"
+                  {/* Category Dropdown Filter for Tasks */}
+                  {activeTab === 'tasks' && (
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="py-2 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer min-w-[130px]"
                     >
-                      + Klien
-                    </button>
-                    {selectedClientIds.size > 0 && (
-                      <button
-                        onClick={() => handleBulkDelete(
-                          [...selectedClientIds], 'klien', '/clients',
-                          () => setSelectedClientIds(new Set())
-                        )}
-                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider hover:bg-rose-700 transition shadow-xs whitespace-nowrap"
-                      >
-                        Hapus ({selectedClientIds.size})
-                      </button>
-                    )}
-                  </>
-                )}
+                      <option value="all">Semua Kategori</option>
+                      <option value="frontend">Frontend</option>
+                      <option value="backend">Backend</option>
+                      <option value="ui_ux">UI/UX</option>
+                      <option value="qa">QA / Testing</option>
+                      <option value="devops">DevOps</option>
+                    </select>
+                  )}
+
+                  {/* Company Dropdown Filter for Clients */}
+                  {activeTab === 'clients' && (
+                    <select
+                      value={clientFilter}
+                      onChange={(e) => setClientFilter(e.target.value)}
+                      className="py-2 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer min-w-[140px]"
+                    >
+                      <option value="all">Semua Perusahaan</option>
+                      {Array.from(new Set(clients.map(c => c.company).filter(Boolean))).map((comp: any) => (
+                        <option key={comp} value={comp}>{comp}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 

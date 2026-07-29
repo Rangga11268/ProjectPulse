@@ -58,6 +58,9 @@ export const MemberApp: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [logLoading, setLogLoading] = useState(false);
+  // Search Query & Category Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Performance Optimization: useMemo for memoized task filtering & pagination
   const activeTasks = useMemo(() => {
@@ -69,9 +72,15 @@ export const MemberApp: React.FC = () => {
   }, [tasks]);
 
   const filteredActiveTasks = useMemo(() => {
-    if (statusFilter === 'all') return activeTasks;
-    return activeTasks.filter((t) => t.status === statusFilter);
-  }, [activeTasks, statusFilter]);
+    return activeTasks.filter((t) => {
+      const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
+      const matchesSearch =
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.project?.name && t.project.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesStatus && matchesCategory && matchesSearch;
+    });
+  }, [activeTasks, statusFilter, categoryFilter, searchQuery]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredActiveTasks.length / itemsPerPage) || 1;
@@ -458,19 +467,77 @@ export const MemberApp: React.FC = () => {
         {/* Active Tasks Tab */}
         {activeSegment === 'tasks' && (
           <>
-            <IonItem style={{ '--background': '#ffffff', '--border-radius': '10px', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
-              <IonLabel style={{ fontSize: '0.78rem', fontWeight: '700', color: '#475569' }}>Filter Status:</IonLabel>
-              <IonSelect
-                value={statusFilter}
-                onIonChange={(e) => setStatusFilter(e.detail.value)}
-                style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0f172a' }}
-              >
-                <IonSelectOption value="all">Semua Task Aktif</IonSelectOption>
-                <IonSelectOption value="todo">To Do</IonSelectOption>
-                <IonSelectOption value="in_progress">In Progress</IonSelectOption>
-                <IonSelectOption value="review">Review</IonSelectOption>
-              </IonSelect>
-            </IonItem>
+            {/* Live Search Input & Filter Controls */}
+            <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Cari nama task / proyek..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 32px 8px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: '600',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    outline: 'none',
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#64748b',
+                      fontWeight: '800',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <IonItem style={{ '--background': '#ffffff', '--border-radius': '10px', border: '1px solid #cbd5e1', margin: 0, '--min-height': '38px' }}>
+                  <IonSelect
+                    value={statusFilter}
+                    onIonChange={(e) => setStatusFilter(e.detail.value)}
+                    style={{ fontSize: '0.72rem', fontWeight: '700', color: '#0f172a', width: '100%' }}
+                  >
+                    <IonSelectOption value="all">Semua Status</IonSelectOption>
+                    <IonSelectOption value="todo">To Do</IonSelectOption>
+                    <IonSelectOption value="in_progress">In Progress</IonSelectOption>
+                    <IonSelectOption value="review">Review</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+
+                <IonItem style={{ '--background': '#ffffff', '--border-radius': '10px', border: '1px solid #cbd5e1', margin: 0, '--min-height': '38px' }}>
+                  <IonSelect
+                    value={categoryFilter}
+                    onIonChange={(e) => setCategoryFilter(e.detail.value)}
+                    style={{ fontSize: '0.72rem', fontWeight: '700', color: '#0f172a', width: '100%' }}
+                  >
+                    <IonSelectOption value="all">Semua Kategori</IonSelectOption>
+                    <IonSelectOption value="backend">Backend</IonSelectOption>
+                    <IonSelectOption value="frontend">Frontend</IonSelectOption>
+                    <IonSelectOption value="design">Design / UI</IonSelectOption>
+                    <IonSelectOption value="qa">QA / Testing</IonSelectOption>
+                    <IonSelectOption value="general">General</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+              </div>
+            </div>
 
             <IonList style={{ background: 'transparent', padding: 0 }}>
               {paginatedTasks.length === 0 ? (
