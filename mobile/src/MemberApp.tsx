@@ -64,6 +64,7 @@ export const MemberApp: React.FC = () => {
   const [commentInput, setCommentInput] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [activeTaskTab, setActiveTaskTab] = useState<'detail' | 'comments'>('detail');
+  const [editingComment, setEditingComment] = useState<any>(null);
   // Search Query & Category Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -233,10 +234,18 @@ export const MemberApp: React.FC = () => {
     if (!selectedTask || !commentInput.trim() || commentLoading) return;
     setCommentLoading(true);
     try {
-      await mobileApiRequest(`/tasks/${selectedTask.id}/comments`, {
-        method: 'POST',
-        body: JSON.stringify({ content: commentInput })
-      });
+      if (editingComment) {
+        await mobileApiRequest(`/comments/${editingComment.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ content: commentInput })
+        });
+        setEditingComment(null);
+      } else {
+        await mobileApiRequest(`/tasks/${selectedTask.id}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({ content: commentInput })
+        });
+      }
       setCommentInput('');
       fetchTaskComments(selectedTask.id);
     } catch (err: any) {
@@ -244,6 +253,22 @@ export const MemberApp: React.FC = () => {
     } finally {
       setCommentLoading(false);
     }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!window.confirm('Yakin ingin menghapus komentar?')) return;
+    try {
+      await mobileApiRequest(`/comments/${commentId}`, { method: 'DELETE' });
+      fetchTaskComments(selectedTask.id);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gagal menghapus komentar.');
+    }
+  };
+
+  const handleQuoteComment = (comment: any) => {
+    const quoteText = `> **${comment.user?.name}** menulis:\n> ${comment.content.split('\n').join('\n> ')}\n\n`;
+    setCommentInput((prev) => prev ? prev + '\n' + quoteText : quoteText);
+    setEditingComment(null);
   };
 
   const handleUpdateStatus = async (taskId: number, newStatus: string) => {
@@ -903,7 +928,17 @@ export const MemberApp: React.FC = () => {
                                 <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0f172a' }}>{c.user?.name}</span>
                                 <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{new Date(c.created_at).toLocaleDateString('id-ID')}</span>
                               </div>
-                              <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', lineHeight: 1.4 }}>{c.content}</p>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                              
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+                                <button onClick={() => handleQuoteComment(c)} style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '0.65rem', fontWeight: 'bold' }}>Quote</button>
+                                {(user?.role === 'admin' || user?.id === c.user_id) && (
+                                  <>
+                                    <button onClick={() => { setEditingComment(c); setCommentInput(c.content); }} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.65rem', fontWeight: 'bold' }}>Edit</button>
+                                    <button onClick={() => handleDeleteComment(c.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.65rem', fontWeight: 'bold' }}>Hapus</button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -913,7 +948,7 @@ export const MemberApp: React.FC = () => {
                       <IonInput
                         value={commentInput}
                         onIonInput={(e) => setCommentInput(e.detail.value!)}
-                        placeholder="Tulis komentar..."
+                        placeholder={editingComment ? "Edit komentar..." : "Tulis komentar..."}
                         style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', background: '#ffffff', fontSize: '0.75rem' }}
                       />
                       <button
@@ -921,8 +956,16 @@ export const MemberApp: React.FC = () => {
                         disabled={commentLoading}
                         style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '0 16px', fontSize: '0.75rem', fontWeight: '800' }}
                       >
-                        Kirim
+                        {editingComment ? 'Update' : 'Kirim'}
                       </button>
+                      {editingComment && (
+                        <button
+                          onClick={() => { setEditingComment(null); setCommentInput(''); }}
+                          style={{ background: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '0.75rem', fontWeight: '800' }}
+                        >
+                          Batal
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

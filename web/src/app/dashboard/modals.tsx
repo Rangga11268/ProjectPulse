@@ -100,7 +100,17 @@ export function TaskModal({
   const [activeTab, setActiveTab] = useState<'detail' | 'comments'>('detail');
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
+  const [editingComment, setEditingComment] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        setCurrentUser(JSON.parse(user));
+      } catch (e) {}
+    }
+  }, []);
 
   useEffect(() => {
     if (show && editing?.id && activeTab === 'comments') {
@@ -131,22 +141,55 @@ export function TaskModal({
     if (!newComment.trim()) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${editing.id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content: newComment })
+      if (editingComment) {
+        const res = await fetch(`http://localhost:8000/api/comments/${editingComment.id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: newComment })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          setNewComment('');
+          setEditingComment(null);
+          fetchComments();
+        }
+      } else {
+        const res = await fetch(`http://localhost:8000/api/tasks/${editing.id}/comments`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: newComment })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          setNewComment('');
+          fetchComments();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.status === 'success') {
-        setNewComment('');
         fetchComments();
       }
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleQuoteComment = (comment: any) => {
+    const quoteText = `> **${comment.user?.name}** menulis:\n> ${comment.content.split('\n').join('\n> ')}\n\n`;
+    setNewComment((prev) => prev ? prev + '\n' + quoteText : quoteText);
+    setEditingComment(null);
   };
 
   if (!show) return null;
@@ -246,6 +289,16 @@ export function TaskModal({
                         <span className="text-[9px] text-slate-400">{new Date(c.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
                       </div>
                       <p className="text-slate-600 text-xs whitespace-pre-wrap">{c.content}</p>
+                      
+                      <div className="mt-2 flex gap-2 justify-end">
+                        <button onClick={() => handleQuoteComment(c)} className="text-[10px] text-blue-600 hover:underline">Quote</button>
+                        {(currentUser?.role === 'admin' || currentUser?.id === c.user_id) && (
+                          <>
+                            <button onClick={() => { setEditingComment(c); setNewComment(c.content); }} className="text-[10px] text-slate-600 hover:underline">Edit</button>
+                            <button onClick={() => { if(confirm('Hapus komentar?')) handleDeleteComment(c.id); }} className="text-[10px] text-red-600 hover:underline">Hapus</button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -257,12 +310,17 @@ export function TaskModal({
                 required
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Ketik komentar..."
+                placeholder={editingComment ? "Edit komentar..." : "Ketik komentar..."}
                 className="flex-1 text-xs p-2 border border-slate-300 rounded focus:border-blue-500 focus:outline-none"
               />
               <button type="submit" className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 transition">
-                Kirim
+                {editingComment ? 'Update' : 'Kirim'}
               </button>
+              {editingComment && (
+                <button type="button" onClick={() => { setEditingComment(null); setNewComment(''); }} className="px-3 py-2 bg-slate-200 text-slate-700 text-xs font-bold uppercase rounded hover:bg-slate-300 transition">
+                  Batal
+                </button>
+              )}
             </form>
           </div>
         )}
@@ -274,14 +332,14 @@ export function TaskModal({
 export function AiTaskModal({
   show, onClose, projects, selectedProjectId, setSelectedProjectId,
   briefInput, setBriefInput, onGenerate, aiLoading, aiTasks,
-  onUpdateField, onSaveTask, savingAi, members,
+  onUpdateField, onSaveTask, onDeleteTask, savingAi, members,
 }: {
   show: boolean; onClose: () => void; projects: any[];
   selectedProjectId: number | null; setSelectedProjectId: (id: number | null) => void;
   briefInput: string; setBriefInput: (v: string) => void;
   onGenerate: () => Promise<void>; aiLoading: boolean;
   aiTasks: any[]; onUpdateField: (idx: number, field: string, val: any) => void;
-  onSaveTask: (idx: number) => Promise<void>; savingAi: number | null; members: any[];
+  onSaveTask: (idx: number) => Promise<void>; onDeleteTask: (idx: number) => void; savingAi: number | null; members: any[];
 }) {
   if (!show) return null;
   return (
@@ -343,14 +401,23 @@ export function AiTaskModal({
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
-                  <input type="number" value={t.estimated_hours} onChange={(e) => onUpdateField(idx, 'estimated_hours', Number(e.target.value))} className="w-20 p-1.5 border rounded" />
-                  <button
-                    onClick={() => onSaveTask(idx)}
-                    disabled={savingAi !== null}
-                    className={`px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wider transition ${savingAi === idx ? 'bg-green-400 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 text-white'}`}
-                  >
-                    {savingAi === idx ? 'Menyimpan...' : 'Simpan Task'}
-                  </button>
+                  <input type="number" value={t.estimated_hours} onChange={(e) => onUpdateField(idx, 'estimated_hours', e.target.value ? Number(e.target.value) : '')} className="w-20 p-1.5 border rounded" />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onSaveTask(idx)}
+                      disabled={savingAi !== null}
+                      className={`px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wider transition ${savingAi === idx ? 'bg-green-400 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 text-white'}`}
+                    >
+                      {savingAi === idx ? 'Menyimpan...' : 'Simpan Task'}
+                    </button>
+                    <button
+                      onClick={() => onDeleteTask(idx)}
+                      disabled={savingAi !== null}
+                      className="px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wider transition bg-rose-100 hover:bg-rose-200 text-rose-700"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

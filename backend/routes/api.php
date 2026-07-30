@@ -47,5 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tasks/{task}/time-logs', [TaskController::class, 'addTimeLog']);
     Route::get('/tasks/{task}/comments', [TaskController::class, 'getComments']);
     Route::post('/tasks/{task}/comments', [TaskController::class, 'addComment']);
+    Route::put('/comments/{comment}', [TaskController::class, 'updateComment']);
+    Route::delete('/comments/{comment}', [TaskController::class, 'destroyComment']);
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
 });

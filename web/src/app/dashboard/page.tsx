@@ -408,6 +408,10 @@ export default function DashboardPage() {
     setAiTasks(updated);
   };
 
+  const handleDeleteAiTask = (idx: number) => {
+    setAiTasks(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSaveAiTask = async (idx: number) => {
     const task = aiTasks[idx];
     if (!selectedProjectId || !task || savingAiRef.current !== null) return;
@@ -420,7 +424,7 @@ export default function DashboardPage() {
           title: task.title,
           description: task.description,
           category: task.category,
-          estimated_hours: task.estimated_hours,
+          estimated_hours: task.estimated_hours || 1, // Fallback to 1 if empty/0
           assignee_id: task.assignee_id || null,
           status: 'todo',
         }),
@@ -1310,6 +1314,7 @@ export default function DashboardPage() {
         aiTasks={aiTasks}
         onUpdateField={handleUpdateAiTaskField}
         onSaveTask={handleSaveAiTask}
+        onDeleteTask={handleDeleteAiTask}
         savingAi={savingAi}
         members={members}
       />

@@ -168,6 +168,40 @@ class TaskController extends Controller
         ], 201);
     }
 
+    public function updateComment(Request $request, \App\Models\TaskComment $comment)
+    {
+        if ($request->user()->id !== $comment->user_id && $request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        $comment->update(['content' => $validated['content']]);
+        $comment->load('user:id,name,email,role');
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Komentar berhasil diupdate.',
+            'data' => $comment,
+        ]);
+    }
+
+    public function destroyComment(Request $request, \App\Models\TaskComment $comment)
+    {
+        if ($request->user()->id !== $comment->user_id && $request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Komentar berhasil dihapus.',
+        ]);
+    }
+
     public function exportTimeLogsCsv()
     {
         $logs = TimeLog::with(['task.project', 'user'])->latest()->get();
