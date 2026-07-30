@@ -455,10 +455,29 @@ export default function DashboardPage() {
     }
   };
 
-  const handleExportCsv = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-    const token = localStorage.getItem('token');
-    window.open(`${baseUrl}/tasks/export/csv?token=${token}`, '_blank');
+  const handleExportCsv = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${baseUrl}/tasks/export/csv`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Gagal mengunduh CSV');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `work_hours_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showNotification('❌ ' + err.message, 'error');
+    }
   };
 
   const handleLogout = () => {
