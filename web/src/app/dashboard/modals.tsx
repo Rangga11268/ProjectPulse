@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 
 export function ClientModal({
   show, onClose, form, setForm, editing, onSave, loading,
@@ -97,63 +97,175 @@ export function TaskModal({
   editing: any; onSave: (e: FormEvent) => Promise<void>; loading: boolean;
   projects: any[]; members: any[];
 }) {
+  const [activeTab, setActiveTab] = useState<'detail' | 'comments'>('detail');
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  useEffect(() => {
+    if (show && editing?.id && activeTab === 'comments') {
+      fetchComments();
+    }
+  }, [show, editing?.id, activeTab]);
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/api/tasks/${editing.id}/comments`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setComments(data.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handlePostComment = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/api/tasks/${editing.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: newComment })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setNewComment('');
+        fetchComments();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (!show) return null;
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)]">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-[var(--color-paper-3)] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-[var(--color-paper-3)] pb-3">
           <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">
-            {editing ? 'Edit Task' : 'Tambah Task Baru'}
+            {editing ? 'Detail Task' : 'Tambah Task Baru'}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
         </div>
-        <form onSubmit={onSave} className="space-y-3">
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Proyek Target</label>
-            <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} className="w-full text-xs p-2 border rounded" disabled={!!editing}>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+
+        {editing && (
+          <div className="flex border-b border-slate-200">
+            <button
+              onClick={() => setActiveTab('detail')}
+              className={`pb-2 px-4 text-xs font-bold uppercase tracking-wider transition ${activeTab === 'detail' ? 'border-b-2 border-blue-600 text-blue-700' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Detail Task
+            </button>
+            <button
+              onClick={() => setActiveTab('comments')}
+              className={`pb-2 px-4 text-xs font-bold uppercase tracking-wider transition ${activeTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-700' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Diskusi & Komentar
+            </button>
           </div>
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Assignee Member</label>
-            <select value={form.assignee_id} onChange={(e) => setForm({ ...form, assignee_id: e.target.value })} className="w-full text-xs p-2 border rounded">
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Judul Task</label>
-            <input type="text" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full text-xs p-2 border rounded" />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Kategori & Status</label>
-            <div className="grid grid-cols-2 gap-2">
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
-                <option value="backend">Backend</option>
-                <option value="frontend">Frontend</option>
-                    <option value="design">Design</option>
-                <option value="QA">QA</option>
-              </select>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="review">Review</option>
-                <option value="done">Done</option>
+        )}
+
+        {activeTab === 'detail' && (
+          <form onSubmit={onSave} className="space-y-3 mt-4">
+            <div>
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Proyek Target</label>
+              <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} className="w-full text-xs p-2 border rounded" disabled={!!editing}>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
               </select>
             </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Assignee Member</label>
+              <select value={form.assignee_id} onChange={(e) => setForm({ ...form, assignee_id: e.target.value })} className="w-full text-xs p-2 border rounded">
+                <option value="">Unassigned</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Judul Task</label>
+              <input type="text" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full text-xs p-2 border rounded" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Kategori & Status</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
+                  <option value="backend">Backend</option>
+                  <option value="frontend">Frontend</option>
+                      <option value="design">Design</option>
+                  <option value="QA">QA</option>
+                </select>
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full text-xs p-2 border rounded font-semibold">
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Estimasi Jam Kerja</label>
+              <input type="number" required min={1} value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: Number(e.target.value) })} className="w-full text-xs p-2 border rounded" />
+            </div>
+            <button type="submit" disabled={loading} className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2 disabled:opacity-50">
+              {loading ? 'Menyimpan...' : editing ? 'Update Task' : 'Simpan Task'}
+            </button>
+          </form>
+        )}
+
+        {activeTab === 'comments' && editing && (
+          <div className="space-y-4 mt-4">
+            <div className="max-h-60 overflow-y-auto space-y-3 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+              {loadingComments ? (
+                <div className="text-center text-xs text-slate-500 py-4">Memuat komentar...</div>
+              ) : comments.length === 0 ? (
+                <div className="text-center text-xs text-slate-500 py-4">Belum ada diskusi untuk task ini.</div>
+              ) : (
+                comments.map((c: any) => (
+                  <div key={c.id} className="bg-white p-3 rounded shadow-xs border border-slate-100 flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase">
+                      {c.user?.name?.charAt(0) || '?'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-bold text-slate-800 text-[11px]">{c.user?.name}</span>
+                        <span className="text-[9px] text-slate-400">{new Date(c.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                      <p className="text-slate-600 text-xs whitespace-pre-wrap">{c.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handlePostComment} className="flex gap-2">
+              <input
+                type="text"
+                required
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Ketik komentar..."
+                className="flex-1 text-xs p-2 border border-slate-300 rounded focus:border-blue-500 focus:outline-none"
+              />
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 transition">
+                Kirim
+              </button>
+            </form>
           </div>
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-[var(--color-ink-muted)] mb-1">Estimasi Jam Kerja</label>
-            <input type="number" required min={1} value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: Number(e.target.value) })} className="w-full text-xs p-2 border rounded" />
-          </div>
-          <button type="submit" disabled={loading} className="w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded mt-2 disabled:opacity-50">
-            {loading ? 'Menyimpan...' : editing ? 'Update Task' : 'Simpan Task'}
-          </button>
-        </form>
+        )}
       </div>
     </div>
   );

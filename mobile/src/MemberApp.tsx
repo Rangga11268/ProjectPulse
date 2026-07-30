@@ -58,6 +58,12 @@ export const MemberApp: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [logLoading, setLogLoading] = useState(false);
+
+  // Comments State
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentInput, setCommentInput] = useState('');
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [activeTaskTab, setActiveTaskTab] = useState<'detail' | 'comments'>('detail');
   // Search Query & Category Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -210,6 +216,34 @@ export const MemberApp: React.FC = () => {
     });
 
     setNotifications(notifs);
+  };
+
+  const fetchTaskComments = async (taskId: number) => {
+    try {
+      const data = await mobileApiRequest(`/tasks/${taskId}/comments`);
+      if (data.data) {
+        setComments(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!selectedTask || !commentInput.trim() || commentLoading) return;
+    setCommentLoading(true);
+    try {
+      await mobileApiRequest(`/tasks/${selectedTask.id}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ content: commentInput })
+      });
+      setCommentInput('');
+      fetchTaskComments(selectedTask.id);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gagal memposting komentar.');
+    } finally {
+      setCommentLoading(false);
+    }
   };
 
   const handleUpdateStatus = async (taskId: number, newStatus: string) => {
@@ -714,15 +748,34 @@ export const MemberApp: React.FC = () => {
               <IonHeader>
                 <IonToolbar style={{ '--background': '#0f172a', '--color': '#ffffff' }}>
                   <IonTitle style={{ fontSize: '0.85rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Detail Task #{selectedTask.id}
+                    Task #{selectedTask.id}
                   </IonTitle>
                   <IonButton slot="end" fill="clear" color="light" size="small" onClick={() => setSelectedTask(null)} style={{ fontWeight: '700' }}>
                     Tutup
                   </IonButton>
                 </IonToolbar>
+                <div style={{ display: 'flex', background: '#1e293b' }}>
+                  <button
+                    onClick={() => setActiveTaskTab('detail')}
+                    style={{ flex: 1, padding: '10px', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', background: 'transparent', color: activeTaskTab === 'detail' ? '#38bdf8' : '#94a3b8', borderBottom: activeTaskTab === 'detail' ? '2px solid #38bdf8' : '2px solid transparent', transition: 'all 0.2s' }}
+                  >
+                    Detail Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTaskTab('comments');
+                      fetchTaskComments(selectedTask.id);
+                    }}
+                    style={{ flex: 1, padding: '10px', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', background: 'transparent', color: activeTaskTab === 'comments' ? '#38bdf8' : '#94a3b8', borderBottom: activeTaskTab === 'comments' ? '2px solid #38bdf8' : '2px solid transparent', transition: 'all 0.2s' }}
+                  >
+                    Komentar
+                  </button>
+                </div>
               </IonHeader>
               <IonContent className="ion-padding" style={{ '--background': '#f8fafc' }}>
-                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                {activeTaskTab === 'detail' ? (
+                  <>
+                    <div style={{ background: '#ffffff', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span style={{ fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bae6fd' }}>
                       {categoryLabels[selectedTask.category] || selectedTask.category}
@@ -834,6 +887,45 @@ export const MemberApp: React.FC = () => {
                     </div>
                   )}
                 </div>
+                </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+                      {comments.length === 0 ? (
+                        <div style={{ padding: '24px 16px', textAlign: 'center', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Belum ada diskusi.</p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {comments.map((c: any) => (
+                            <div key={c.id} style={{ background: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0f172a' }}>{c.user?.name}</span>
+                                <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{new Date(c.created_at).toLocaleDateString('id-ID')}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', lineHeight: 1.4 }}>{c.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <IonInput
+                        value={commentInput}
+                        onIonInput={(e) => setCommentInput(e.detail.value!)}
+                        placeholder="Tulis komentar..."
+                        style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', background: '#ffffff', fontSize: '0.75rem' }}
+                      />
+                      <button
+                        onClick={handlePostComment}
+                        disabled={commentLoading}
+                        style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '0 16px', fontSize: '0.75rem', fontWeight: '800' }}
+                      >
+                        Kirim
+                      </button>
+                    </div>
+                  </div>
+                )}
               </IonContent>
             </>
           )}

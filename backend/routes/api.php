@@ -45,5 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/tasks/{task}', [TaskController::class, 'update']);
     Route::patch('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
     Route::post('/tasks/{task}/time-logs', [TaskController::class, 'addTimeLog']);
+    Route::get('/tasks/{task}/comments', [TaskController::class, 'getComments']);
+    Route::post('/tasks/{task}/comments', [TaskController::class, 'addComment']);
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
 });

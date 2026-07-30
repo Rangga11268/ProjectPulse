@@ -138,6 +138,36 @@ class TaskController extends Controller
         ], 201);
     }
 
+    public function getComments(Task $task)
+    {
+        $comments = $task->comments()->with('user:id,name,email,role')->latest()->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $comments,
+        ]);
+    }
+
+    public function addComment(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        $comment = $task->comments()->create([
+            'user_id' => $request->user()->id,
+            'content' => $validated['content'],
+        ]);
+
+        $comment->load('user:id,name,email,role');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Komentar berhasil ditambahkan.',
+            'data' => $comment,
+        ], 201);
+    }
+
     public function exportTimeLogsCsv()
     {
         $logs = TimeLog::with(['task.project', 'user'])->latest()->get();
