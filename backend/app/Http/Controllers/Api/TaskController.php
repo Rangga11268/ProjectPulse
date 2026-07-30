@@ -217,7 +217,12 @@ class TaskController extends Controller
 
         $callback = function() use ($logs) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Log ID', 'Member', 'Proyek', 'Task Title', 'Jam Kerja', 'Catatan Progres', 'Tanggal']);
+            
+            // Add UTF-8 BOM so Excel opens it with correct encoding
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Use semicolon as delimiter for Excel compatibility in ID locale
+            fputcsv($file, ['Log ID', 'Member', 'Proyek', 'Task Title', 'Jam Kerja', 'Catatan Progres', 'Tanggal'], ';');
 
             foreach ($logs as $log) {
                 fputcsv($file, [
@@ -225,10 +230,10 @@ class TaskController extends Controller
                     $log->user->name ?? '-',
                     $log->task->project->name ?? '-',
                     $log->task->title ?? '-',
-                    $log->hours,
+                    str_replace('.', ',', (string)$log->hours), // Excel ID expects comma for decimals
                     $log->note,
                     $log->created_at->format('Y-m-d H:i:s'),
-                ]);
+                ], ';');
             }
             fclose($file);
         };
