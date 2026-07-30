@@ -103,6 +103,7 @@ export function TaskModal({
   const [loadingComments, setLoadingComments] = useState(false);
   const [editingComment, setEditingComment] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -139,7 +140,8 @@ export function TaskModal({
 
   const handlePostComment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmittingComment) return;
+    setIsSubmittingComment(true);
     try {
       const token = localStorage.getItem('token');
       if (editingComment) {
@@ -168,6 +170,8 @@ export function TaskModal({
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -309,15 +313,26 @@ export function TaskModal({
               <input
                 type="text"
                 required
+                disabled={isSubmittingComment}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder={editingComment ? "Edit komentar..." : "Ketik komentar..."}
-                className="flex-1 text-xs p-2 border border-slate-300 rounded focus:border-blue-500 focus:outline-none"
+                className="flex-1 text-xs p-2 border border-slate-300 rounded focus:border-blue-500 focus:outline-none disabled:opacity-50"
               />
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 transition">
-                {editingComment ? 'Update' : 'Kirim'}
+              <button type="submit" disabled={isSubmittingComment || !newComment.trim()} className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                {isSubmittingComment ? (
+                  <>
+                    <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Proses...
+                  </>
+                ) : (
+                  editingComment ? 'Update' : 'Kirim'
+                )}
               </button>
-              {editingComment && (
+              {editingComment && !isSubmittingComment && (
                 <button type="button" onClick={() => { setEditingComment(null); setNewComment(''); }} className="px-3 py-2 bg-slate-200 text-slate-700 text-xs font-bold uppercase rounded hover:bg-slate-300 transition">
                   Batal
                 </button>
