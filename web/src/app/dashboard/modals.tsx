@@ -104,6 +104,7 @@ export function TaskModal({
   const [editingComment, setEditingComment] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -300,7 +301,15 @@ export function TaskModal({
                         {(currentUser?.role === 'admin' || currentUser?.id === c.user_id) && (
                           <>
                             <button onClick={() => { setEditingComment(c); setNewComment(c.content); }} className="text-[10px] text-slate-600 hover:underline">Edit</button>
-                            <button onClick={() => { if(confirm('Hapus komentar?')) handleDeleteComment(c.id); }} className="text-[10px] text-red-600 hover:underline">Hapus</button>
+                            <button onClick={() => { 
+                              setConfirmDelete({
+                                message: 'Apakah Anda yakin ingin menghapus komentar ini?',
+                                onConfirm: () => {
+                                  handleDeleteComment(c.id);
+                                  setConfirmDelete(null);
+                                }
+                              });
+                            }} className="text-[10px] text-red-600 hover:underline">Hapus</button>
                           </>
                         )}
                       </div>
@@ -341,6 +350,7 @@ export function TaskModal({
           </div>
         )}
       </div>
+      <ConfirmDialog dialog={confirmDelete} onClose={() => setConfirmDelete(null)} />
     </div>
   );
 }

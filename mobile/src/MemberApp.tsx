@@ -23,6 +23,8 @@ import {
   IonList,
   IonSegment,
   IonSegmentButton,
+  IonAlert,
+  IonSpinner,
 } from '@ionic/react';
 import { mobileApiRequest } from './services/api';
 
@@ -65,6 +67,7 @@ export const MemberApp: React.FC = () => {
   const [commentLoading, setCommentLoading] = useState(false);
   const [activeTaskTab, setActiveTaskTab] = useState<'detail' | 'comments'>('detail');
   const [editingComment, setEditingComment] = useState<any>(null);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   // Search Query & Category Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -256,12 +259,13 @@ export const MemberApp: React.FC = () => {
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!window.confirm('Yakin ingin menghapus komentar?')) return;
     try {
       await mobileApiRequest(`/comments/${commentId}`, { method: 'DELETE' });
       fetchTaskComments(selectedTask.id);
     } catch (err: any) {
       setToastMessage(err.message || 'Gagal menghapus komentar.');
+    } finally {
+      setCommentToDelete(null);
     }
   };
 
@@ -935,7 +939,7 @@ export const MemberApp: React.FC = () => {
                                 {(user?.role === 'admin' || user?.id === c.user_id) && (
                                   <>
                                     <button onClick={() => { setEditingComment(c); setCommentInput(c.content); }} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.65rem', fontWeight: 'bold' }}>Edit</button>
-                                    <button onClick={() => handleDeleteComment(c.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.65rem', fontWeight: 'bold' }}>Hapus</button>
+                                    <button onClick={() => setCommentToDelete(c.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.65rem', fontWeight: 'bold' }}>Hapus</button>
                                   </>
                                 )}
                               </div>
@@ -946,19 +950,20 @@ export const MemberApp: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <IonInput
+                        disabled={commentLoading}
                         value={commentInput}
                         onIonInput={(e) => setCommentInput(e.detail.value!)}
                         placeholder={editingComment ? "Edit komentar..." : "Tulis komentar..."}
-                        style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', background: '#ffffff', fontSize: '0.75rem' }}
+                        style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', background: '#ffffff', fontSize: '0.75rem', opacity: commentLoading ? 0.6 : 1 }}
                       />
                       <button
                         onClick={handlePostComment}
-                        disabled={commentLoading}
-                        style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '0 16px', fontSize: '0.75rem', fontWeight: '800' }}
+                        disabled={commentLoading || !commentInput.trim()}
+                        style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '0 16px', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', opacity: (commentLoading || !commentInput.trim()) ? 0.6 : 1 }}
                       >
-                        {editingComment ? 'Update' : 'Kirim'}
+                        {commentLoading ? <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} /> : (editingComment ? 'Update' : 'Kirim')}
                       </button>
-                      {editingComment && (
+                      {editingComment && !commentLoading && (
                         <button
                           onClick={() => { setEditingComment(null); setCommentInput(''); }}
                           style={{ background: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '0.75rem', fontWeight: '800' }}
@@ -970,6 +975,27 @@ export const MemberApp: React.FC = () => {
                   </div>
                 )}
               </IonContent>
+              {/* Delete Comment Confirm Dialog */}
+              <IonAlert
+                isOpen={!!commentToDelete}
+                onDidDismiss={() => setCommentToDelete(null)}
+                header="Hapus Komentar"
+                message="Apakah Anda yakin ingin menghapus komentar ini?"
+                buttons={[
+                  {
+                    text: 'Batal',
+                    role: 'cancel',
+                    handler: () => setCommentToDelete(null)
+                  },
+                  {
+                    text: 'Hapus',
+                    role: 'confirm',
+                    handler: () => {
+                      if (commentToDelete) handleDeleteComment(commentToDelete);
+                    }
+                  }
+                ]}
+              />
             </>
           )}
         </IonModal>
