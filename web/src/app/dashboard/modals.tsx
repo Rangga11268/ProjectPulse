@@ -100,6 +100,7 @@ export function TaskModal({
   const [activeTab, setActiveTab] = useState<'detail' | 'comments'>('detail');
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
   const [editingComment, setEditingComment] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
