@@ -1045,11 +1045,9 @@ export default function DashboardPage() {
                     <div 
                       key={statusCol}
                       className="flex-shrink-0 w-80 flex flex-col bg-slate-100/50 rounded-xl border border-slate-200/60"
-                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-slate-200/60'); }}
-                      onDragLeave={(e) => { e.currentTarget.classList.remove('bg-slate-200/60'); }}
+                      onDragOver={(e) => { e.preventDefault(); }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        e.currentTarget.classList.remove('bg-slate-200/60');
                         const taskIdStr = e.dataTransfer.getData('text/plain');
                         if (taskIdStr) {
                           handleTaskDrop(parseInt(taskIdStr), statusCol);
@@ -1072,10 +1070,7 @@ export default function DashboardPage() {
                             draggable
                             onDragStart={(e) => {
                               e.dataTransfer.setData('text/plain', t.id.toString());
-                              e.currentTarget.style.opacity = '0.4';
-                            }}
-                            onDragEnd={(e) => {
-                              e.currentTarget.style.opacity = '1';
+                              e.dataTransfer.effectAllowed = 'move';
                             }}
                             onClick={() => handleOpenEditTask(t)}
                             className="bg-white p-4 rounded-lg shadow-sm border border-slate-200/80 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition group"
